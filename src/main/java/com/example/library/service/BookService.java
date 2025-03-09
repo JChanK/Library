@@ -81,7 +81,7 @@ public class BookService {
         List<Book> books = bookRepository.findAll();
         return books.stream()
                 .map(BookMapper::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public BookDto findById(int id) {

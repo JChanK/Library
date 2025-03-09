@@ -6,6 +6,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ReviewMapper {
+
+    private ReviewMapper() {
+        // Private constructor to prevent instantiation
+    }
+
     public static ReviewDto toDto(Review review) {
         ReviewDto reviewDto = new ReviewDto();
         reviewDto.setId(review.getId()); // Добавьте ID, если нужно

@@ -13,13 +13,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class BookMapper {
 
-    // Преобразование Book в BookDto
+    private BookMapper() {
+        // Private constructor to prevent instantiation
+    }
+
     public static BookDto toDto(Book book) {
         BookDto bookDto = new BookDto();
         bookDto.setId(book.getId());
         bookDto.setTitle(book.getTitle());
 
-        // Преобразование авторов в AuthorDTO
         if (book.getAuthors() != null) {
             Set<AuthorDto> authorDto = book.getAuthors().stream()
                     .map(AuthorMapper::toDto)
@@ -37,13 +39,11 @@ public class BookMapper {
         return bookDto;
     }
 
-    // Преобразование BookDto в Book
     public static Book toEntity(BookDto bookDto) {
         Book book = new Book();
         book.setId(bookDto.getId());
         book.setTitle(bookDto.getTitle());
 
-        // Преобразование авторов из AuthorDTO в Author
         if (bookDto.getAuthors() != null) {
             Set<Author> authors = bookDto.getAuthors().stream()
                     .map(AuthorMapper::toEntity)
