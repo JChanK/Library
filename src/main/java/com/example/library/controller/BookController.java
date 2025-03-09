@@ -1,6 +1,6 @@
 package com.example.library.controller;
 
-import com.example.library.model.Book;
+import com.example.library.dto.BookDto;
 import com.example.library.service.BookService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,57 +16,56 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/books") // Общий префикс для маршрутов
-public class LibraryController {
+@RequestMapping("/books")
+public class BookController {
 
     private final BookService bookService;
 
     @Autowired
-    public LibraryController(BookService bookService) {
+    public BookController(BookService bookService) {
         this.bookService = bookService;
     }
 
     @PostMapping
-    public ResponseEntity<String> create(@RequestBody Book book) {
-        bookService.create(book);
-        return ResponseEntity.status(201).body("Book was created with id:" + book.getId());
+    public ResponseEntity<BookDto> create(@RequestBody BookDto bookDto) {
+        BookDto createdBook = bookService.create(bookDto);
+        return ResponseEntity.status(201).body(createdBook);
     }
 
     @GetMapping
-    public ResponseEntity<List<Book>> getAll() {
-        final List<Book> books = bookService.readAll();
-        return books != null && !books.isEmpty()
-                ? ResponseEntity.ok(books)
-                : ResponseEntity.notFound().build();
+    public ResponseEntity<List<BookDto>> getAll() {
+        List<BookDto> books = bookService.readAll();
+        return ResponseEntity.ok(books);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Book> getBookById(@PathVariable int id) {
-        final Book book = bookService.findById(id);
+    public ResponseEntity<BookDto> getBookById(@PathVariable int id) {
+        BookDto book = bookService.findById(id);
         return book != null
                 ? ResponseEntity.ok(book)
                 : ResponseEntity.notFound().build();
     }
 
-    //(Query Parameters)
     @GetMapping("/search")
-    public ResponseEntity<Book> getBookByTitle(@RequestParam String title) {
-        Book book = bookService.findByTitle(title);
+    public ResponseEntity<BookDto> getBookByTitle(@RequestParam String title) {
+        BookDto book = bookService.findByTitle(title);
         return book != null
                 ? ResponseEntity.ok(book)
                 : ResponseEntity.notFound().build();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@RequestBody Book book, @PathVariable(name = "id") int id) {
-        return bookService.update(book, id)
-                ? ResponseEntity.ok().build()
+    public ResponseEntity<BookDto> update(@RequestBody BookDto bookDto, @PathVariable int id) {
+        BookDto updatedBook = bookService.update(bookDto, id);
+        return updatedBook != null
+                ? ResponseEntity.ok(updatedBook)
                 : ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable int id) {
-        return bookService.delete(id)
+    public ResponseEntity<Void> delete(@PathVariable int id) {
+        boolean isDeleted = bookService.delete(id);
+        return isDeleted
                 ? ResponseEntity.ok().build()
                 : ResponseEntity.notFound().build();
     }
