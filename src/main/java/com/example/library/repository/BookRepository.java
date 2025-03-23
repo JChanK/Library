@@ -11,16 +11,9 @@ import org.springframework.stereotype.Repository;
 public interface BookRepository extends JpaRepository<Book, Integer> {
     Book findByTitle(String title);
 
-    //@Query("SELECT DISTINCT b FROM Book b JOIN b.reviews r
-    // WHERE LOWER(r.message) LIKE LOWER(CONCAT('% ', :keyword, ' %'))
-    // OR LOWER(r.message) LIKE LOWER(CONCAT(:keyword, ' %'))
-    // OR LOWER(r.message) LIKE LOWER(CONCAT('% ', :keyword))
-    // OR LOWER(r.message) = LOWER(:keyword)")
-    //    List<Book> findBooksByReviewMessageContaining(@Param("keyword") String keyword);
     @Query("SELECT DISTINCT b FROM Book b JOIN b.reviews r"
             + " WHERE LOWER(r.message) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     List<Book> findBooksByReviewMessageContaining(@Param("keyword") String keyword);
-
 
     @Query(value = "SELECT b.* FROM book b "
             + "JOIN book_author ba ON b.id = ba.book_id "
