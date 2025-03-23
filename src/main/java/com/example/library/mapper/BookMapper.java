@@ -1,61 +1,65 @@
 package com.example.library.mapper;
 
-import com.example.library.dto.AuthorDto;
 import com.example.library.dto.BookDto;
-import com.example.library.dto.ReviewDto;
-import com.example.library.model.Author;
 import com.example.library.model.Book;
-import com.example.library.model.Review;
-import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class BookMapper {
 
-    private BookMapper() {
-        // Private constructor to prevent instantiation
+    private final AuthorMapper authorMapper;
+    private final ReviewMapper reviewMapper;
+
+    @Autowired
+    public BookMapper(AuthorMapper authorMapper, ReviewMapper reviewMapper) {
+        this.authorMapper = authorMapper;
+        this.reviewMapper = reviewMapper;
     }
 
-    public static BookDto toDto(Book book) {
+    public BookDto toDto(Book book) {
         BookDto bookDto = new BookDto();
         bookDto.setId(book.getId());
         bookDto.setTitle(book.getTitle());
 
         if (book.getAuthors() != null) {
-            Set<AuthorDto> authorDto = book.getAuthors().stream()
-                    .map(AuthorMapper::toDto)
-                    .collect(Collectors.toSet());
-            bookDto.setAuthors(authorDto);
+            bookDto.setAuthors(
+                    book.getAuthors().stream()
+                            .map(authorMapper::toDto)
+                            .collect(Collectors.toList())
+            );
         }
 
         if (book.getReviews() != null) {
-            Set<ReviewDto> reviewDto = book.getReviews().stream()
-                    .map(ReviewMapper::toDto)
-                    .collect(Collectors.toSet());
-            bookDto.setReviews(reviewDto);
+            bookDto.setReviews(
+                    book.getReviews().stream()
+                            .map(reviewMapper::toDto)
+                            .collect(Collectors.toList())
+            );
         }
 
         return bookDto;
     }
 
-    public static Book toEntity(BookDto bookDto) {
+    public Book toEntity(BookDto bookDto) {
         Book book = new Book();
         book.setId(bookDto.getId());
         book.setTitle(bookDto.getTitle());
 
         if (bookDto.getAuthors() != null) {
-            Set<Author> authors = bookDto.getAuthors().stream()
-                    .map(AuthorMapper::toEntity)
-                    .collect(Collectors.toSet());
-            book.setAuthors(authors);
+            book.setAuthors(
+                    bookDto.getAuthors().stream()
+                            .map(authorMapper::toEntity)
+                            .collect(Collectors.toList())
+            );
         }
-
         if (bookDto.getReviews() != null) {
-            Set<Review> reviews = bookDto.getReviews().stream()
-                    .map(ReviewMapper::toEntity)
-                    .collect(Collectors.toSet());
-            book.setReviews(reviews);
+            book.setReviews(
+                    bookDto.getReviews().stream()
+                            .map(reviewMapper::toEntity)
+                            .collect(Collectors.toList())
+            );
         }
         return book;
     }

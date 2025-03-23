@@ -1,7 +1,7 @@
 package com.example.library.dto;
 
 public class ReviewDto {
-    private int id; // Добавьте ID
+    private int id;
     private String message;
 
     public int getId() {

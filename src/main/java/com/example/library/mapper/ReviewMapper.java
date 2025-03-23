@@ -7,20 +7,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class ReviewMapper {
 
-    private ReviewMapper() {
-        // Private constructor to prevent instantiation
-    }
-
-    public static ReviewDto toDto(Review review) {
+    public ReviewDto toDto(Review review) {
         ReviewDto reviewDto = new ReviewDto();
-        reviewDto.setId(review.getId()); // Добавьте ID, если нужно
+        reviewDto.setId(review.getId());
         reviewDto.setMessage(review.getMessage());
         return reviewDto;
     }
 
-    public static Review toEntity(ReviewDto reviewDto) {
+    public Review toEntity(ReviewDto reviewDto) {
         Review review = new Review();
-        //review.setId(reviewDto.getId()); // Добавьте ID, если нужно
+        review.setId(reviewDto.getId());
         review.setMessage(reviewDto.getMessage());
         return review;
     }

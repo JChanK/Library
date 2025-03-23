@@ -1,12 +1,12 @@
 package com.example.library.dto;
 
-import java.util.Set;
+import java.util.List;
 
 public class BookDto {
     private int id;
     private String title;
-    private Set<AuthorDto> authors;
-    private Set<ReviewDto> reviews;
+    private List<AuthorDto> authors;
+    private List<ReviewDto> reviews;
 
     public int getId() {
         return id;
@@ -24,19 +24,19 @@ public class BookDto {
         this.title = title;
     }
 
-    public Set<AuthorDto> getAuthors() {
+    public List<AuthorDto> getAuthors() {
         return authors;
     }
 
-    public void setAuthors(Set<AuthorDto> authors) {
+    public void setAuthors(List<AuthorDto> authors) {
         this.authors = authors;
     }
 
-    public Set<ReviewDto> getReviews() {
+    public List<ReviewDto> getReviews() {
         return reviews;
     }
 
-    public void setReviews(Set<ReviewDto> reviews) {
+    public void setReviews(List<ReviewDto> reviews) {
         this.reviews = reviews;
     }
 }

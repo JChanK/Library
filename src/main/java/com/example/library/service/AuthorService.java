@@ -1,12 +1,12 @@
 package com.example.library.service;
 
-import com.example.library.dto.AuthorDto;
 import com.example.library.exception.CustomException;
-import com.example.library.mapper.AuthorMapper;
 import com.example.library.model.Author;
 import com.example.library.model.Book;
 import com.example.library.repository.AuthorRepository;
 import com.example.library.repository.BookRepository;
+import com.example.library.util.CacheUtil;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,33 +19,40 @@ public class AuthorService {
 
     private static final String AUTHOR_NOT_FOUND_MESSAGE = "Author not found with id: ";
     private static final String BOOK_NOT_FOUND_MESSAGE = "Book not found with id: ";
-    private static final String AUTHOR_DTO_NULL_MESSAGE = "AuthorDto cannot be null";
+    private static final String AUTHOR_NULL_MESSAGE = "Author cannot be null";
     private static final String AUTHOR_NAME_EMPTY_MESSAGE = "Author name cannot be empty";
-    private static final String AUTHOR_SURNAME_EMPTY_MESSAGE =
-            "Author surname cannot be empty";
+    private static final String AUTHOR_SURNAME_EMPTY_MESSAGE = "Author surname cannot be empty";
     private static final String AUTHOR_ALREADY_ASSOCIATED_MESSAGE =
             "Author is already associated with this book";
 
     private final AuthorRepository authorRepository;
     private final BookRepository bookRepository;
+    private final CacheUtil<Integer, Author> authorCacheId; // Кэш для авторов
 
     @Autowired
-    public AuthorService(AuthorRepository authorRepository, BookRepository bookRepository) {
+    public AuthorService(AuthorRepository authorRepository,
+                         BookRepository bookRepository, CacheUtil<Integer,
+                    Author> authorCacheId) {
         this.authorRepository = authorRepository;
         this.bookRepository = bookRepository;
+        this.authorCacheId = authorCacheId;
     }
 
     @Transactional
-    public AuthorDto create(AuthorDto authorDto, int bookId) {
-        if (authorDto == null) {
-            throw new CustomException(AUTHOR_DTO_NULL_MESSAGE, 400);
+    public Author create(Author author, int bookId) {
+        if (author == null) {
+            throw new CustomException(AUTHOR_NULL_MESSAGE, 400);
         }
 
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new CustomException(BOOK_NOT_FOUND_MESSAGE + bookId, 404));
 
-        Author existingAuthor = authorRepository.findByNameAndSurname(authorDto.getName(),
-                authorDto.getSurname());
+        if (author.getBooks() == null) {
+            author.setBooks(new ArrayList<>());
+        }
+
+        Author existingAuthor = authorRepository.findByNameAndSurname(author.getName(),
+                author.getSurname());
         if (existingAuthor != null) {
             if (book.getAuthors().contains(existingAuthor)) {
                 throw new CustomException(AUTHOR_ALREADY_ASSOCIATED_MESSAGE, 400);
@@ -53,51 +60,61 @@ public class AuthorService {
             book.getAuthors().add(existingAuthor);
             existingAuthor.getBooks().add(book);
             bookRepository.save(book);
-            return AuthorMapper.toDto(existingAuthor);
+            return existingAuthor;
         }
 
-        Author newAuthor = AuthorMapper.toEntity(authorDto);
-        newAuthor.getBooks().add(book);
-        book.getAuthors().add(newAuthor);
+        author.getBooks().add(book);
+        book.getAuthors().add(author);
 
-        Author savedAuthor = authorRepository.save(newAuthor);
-        return AuthorMapper.toDto(savedAuthor);
+        Author savedAuthor = authorRepository.save(author);
+
+        authorCacheId.put(savedAuthor.getId(), savedAuthor);
+
+        return savedAuthor;
     }
 
-    public List<AuthorDto> readAll() {
-        List<Author> authors = authorRepository.findAll();
-        return authors.stream()
-                .map(AuthorMapper::toDto)
-                .toList();
+    public List<Author> readAll() {
+        return authorRepository.findAll();
     }
 
-    public AuthorDto findById(int id) {
+    public Author findById(int id) {
+        Author cachedAuthor = authorCacheId.get(id);
+        if (cachedAuthor != null) {
+            return cachedAuthor;
+        }
+
         Author author = authorRepository.findById(id)
                 .orElseThrow(() -> new CustomException(AUTHOR_NOT_FOUND_MESSAGE + id, 404));
-        return AuthorMapper.toDto(author);
+
+        authorCacheId.put(id, author);
+
+        return author;
     }
 
     @Transactional
-    public AuthorDto update(int id, AuthorDto authorDto) {
-        if (authorDto == null) {
-            throw new CustomException(AUTHOR_DTO_NULL_MESSAGE, 400);
+    public Author update(int id, Author author) {
+        if (author == null) {
+            throw new CustomException(AUTHOR_NULL_MESSAGE, 400);
         }
 
-        if (authorDto.getName() == null || authorDto.getName().trim().isEmpty()) {
+        if (author.getName() == null || author.getName().trim().isEmpty()) {
             throw new CustomException(AUTHOR_NAME_EMPTY_MESSAGE, 400);
         }
-        if (authorDto.getSurname() == null || authorDto.getSurname().trim().isEmpty()) {
+        if (author.getSurname() == null || author.getSurname().trim().isEmpty()) {
             throw new CustomException(AUTHOR_SURNAME_EMPTY_MESSAGE, 400);
         }
 
         Author existingAuthor = authorRepository.findById(id)
                 .orElseThrow(() -> new CustomException(AUTHOR_NOT_FOUND_MESSAGE + id, 404));
 
-        existingAuthor.setName(authorDto.getName());
-        existingAuthor.setSurname(authorDto.getSurname());
+        existingAuthor.setName(author.getName());
+        existingAuthor.setSurname(author.getSurname());
 
         Author updatedAuthor = authorRepository.save(existingAuthor);
-        return AuthorMapper.toDto(updatedAuthor);
+
+        authorCacheId.put(id, updatedAuthor);
+
+        return updatedAuthor;
     }
 
     @Transactional
@@ -116,6 +133,8 @@ public class AuthorService {
         }
 
         authorRepository.delete(author);
+        authorCacheId.evict(authorId);
         return true;
     }
+
 }

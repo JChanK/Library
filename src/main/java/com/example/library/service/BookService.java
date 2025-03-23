@@ -1,18 +1,18 @@
 package com.example.library.service;
 
-import com.example.library.dto.BookDto;
 import com.example.library.exception.CustomException;
-import com.example.library.mapper.AuthorMapper;
-import com.example.library.mapper.BookMapper;
 import com.example.library.model.Author;
 import com.example.library.model.Book;
+import com.example.library.model.Review;
 import com.example.library.repository.AuthorRepository;
 import com.example.library.repository.BookRepository;
 import com.example.library.repository.ReviewRepository;
+import com.example.library.util.CacheUtil;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,90 +23,93 @@ public class BookService {
     private final BookRepository bookRepository;
     private final AuthorRepository authorRepository;
     private final ReviewRepository reviewRepository;
+    private final CacheUtil<Integer, Book> bookCacheId;
+    private final CacheUtil<Integer, Author> authorCacheId;
+    private final CacheUtil<Integer, List<Review>> reviewCacheId;
 
     @Autowired
     public BookService(BookRepository bookRepository, AuthorRepository authorRepository,
-                       ReviewRepository reviewRepository) {
+                       ReviewRepository reviewRepository,
+                       CacheUtil<Integer, Book> bookCacheId,
+                       CacheUtil<Integer, Author> authorCacheId,
+                       CacheUtil<Integer, List<Review>> reviewCacheId) {
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
         this.reviewRepository = reviewRepository;
+        this.bookCacheId = bookCacheId;
+        this.authorCacheId = authorCacheId;
+        this.reviewCacheId = reviewCacheId;
     }
 
-    public BookDto create(BookDto bookDto) {
-        if (bookDto == null) {
-            throw new CustomException("BookDto cannot be null", 400);
+    @Transactional
+    public Book create(Book book) {
+        if (book == null) {
+            throw new CustomException("Book cannot be null", 400);
         }
-
-        if (bookDto.getTitle() == null || bookDto.getTitle().trim().isEmpty()) {
+        if (book.getTitle() == null || book.getTitle().trim().isEmpty()) {
             throw new CustomException("Book title cannot be empty", 400);
         }
-
-        if (bookDto.getAuthors() == null || bookDto.getAuthors().isEmpty()) {
+        if (book.getAuthors() == null || book.getAuthors().isEmpty()) {
             throw new CustomException("Book must have at least one author", 400);
         }
 
-        Set<Author> authors = bookDto.getAuthors().stream()
-                .map(authorDto -> {
-                    Author existingAuthor =
-                            authorRepository.findByNameAndSurname(authorDto.getName(),
-                            authorDto.getSurname());
-                    if (existingAuthor != null) {
-                        return existingAuthor;
-                    } else {
-                        Author newAuthor = AuthorMapper.toEntity(authorDto);
-                        return authorRepository.save(newAuthor);
-                    }
-                })
-                .collect(Collectors.toSet());
-
-        List<Book> existingBooks =
-                bookRepository.findByTitleAndAuthors(bookDto.getTitle(), authors);
-        if (!existingBooks.isEmpty()) {
-            throw new CustomException("Book with the same title and authors already exists", 400);
+        Set<Author> authorsToAdd = new HashSet<>();
+        for (Author author : book.getAuthors()) {
+            Author existingAuthor = authorRepository.findByNameAndSurname(author.getName(),
+                    author.getSurname());
+            authorsToAdd.add(Objects.requireNonNullElse(existingAuthor, author));
         }
 
-        Book book = new Book();
-        book.setTitle(bookDto.getTitle());
-        book.setAuthors(authors);
-
-        for (Author author : authors) {
-            author.getBooks().add(book);
-        }
+        book.setAuthors(new ArrayList<>(authorsToAdd));
 
         Book savedBook = bookRepository.save(book);
-        return BookMapper.toDto(savedBook);
+
+        bookCacheId.put(savedBook.getId(), savedBook);
+        for (Author author : savedBook.getAuthors()) {
+            authorCacheId.put(author.getId(), author);
+        }
+
+        return savedBook;
     }
 
-    public List<BookDto> readAll() {
-        List<Book> books = bookRepository.findAll();
-        return books.stream()
-                .map(BookMapper::toDto)
-                .toList();
+    public List<Book> readAll() {
+        return bookRepository.findAll();
     }
 
-    public BookDto findById(int id) {
+    public Book findById(int id) {
+        Book cachedBook = bookCacheId.get(id);
+        if (cachedBook != null) {
+            return cachedBook;
+        }
+
         Book book = bookRepository.findById(id).orElse(null);
         if (book != null) {
-            return BookMapper.toDto(book);
+            bookCacheId.put(id, book);
+            return book;
         }
         return null;
     }
 
-    public BookDto findByTitle(String title) {
-        Book book = bookRepository.findByTitle(title);
-        if (book != null) {
-            return BookMapper.toDto(book);
-        }
-        return null;
+    public Book findByTitle(String title) {
+        return bookRepository.findByTitle(title);
     }
 
-    public BookDto update(BookDto bookDto, int id) {
+    @Transactional
+    public Book update(Book book, int id) {
         Book existingBook = bookRepository.findById(id).orElse(null);
         if (existingBook != null) {
-            Book book = BookMapper.toEntity(bookDto);
-            book.setId(id);
+
+            List<Author> updatedAuthors = new ArrayList<>(new HashSet<>(book.getAuthors()));
+            existingBook.setAuthors(updatedAuthors);
+
             Book updatedBook = bookRepository.save(book);
-            return BookMapper.toDto(updatedBook);
+            bookCacheId.put(updatedBook.getId(), updatedBook);
+
+            for (Author author : updatedAuthors) {
+                authorCacheId.put(author.getId(), author);
+            }
+
+            return updatedBook;
         }
         return null;
     }
@@ -117,24 +120,40 @@ public class BookService {
                 .orElseThrow(() -> new CustomException("Book not found with id: " + bookId, 404));
 
         reviewRepository.deleteAll(book.getReviews());
+        for (Review review : book.getReviews()) {
+            reviewCacheId.evict(review.getId());
+        }
 
-        book.getReviews().clear();
         Set<Author> authors = new HashSet<>(book.getAuthors());
-
         for (Author author : authors) {
             author.getBooks().remove(book);
             authorRepository.save(author);
 
             if (author.getBooks().isEmpty()) {
                 authorRepository.delete(author);
+                authorCacheId.evict(author.getId());
             }
         }
 
-        book.getAuthors().clear();
-        bookRepository.save(book);
-
         bookRepository.delete(book);
+        bookCacheId.evict(bookId);
 
         return true;
     }
+
+    public List<Book> findBooksByReviewMessageContaining(String keyword) {
+        List<Book> books = bookRepository.findBooksByReviewMessageContaining(keyword);
+        if (books.isEmpty()) {
+            throw new CustomException("No books found with reviews containing the message: "
+                    + keyword, 404);
+        }
+        return books;
+    }
+
+    public List<Book> findBooksByAuthorNameAndSurnameNative(String authorName,
+                                                            String authorSurname) {
+        return bookRepository.findBooksByAuthorNameAndSurnameNative(authorName, authorSurname);
+    }
+
 }
+
