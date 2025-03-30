@@ -24,10 +24,10 @@ public class LoggingUtil {
         StopWatch stopWatch = new StopWatch();
         String methodName = joinPoint.getSignature().toShortString();
 
-        logger.info("Method called: {} with args: {}", methodName, joinPoint.getArgs());
-        stopWatch.start();
-
         try {
+            logger.info("Method called: {} with args: {}", methodName, joinPoint.getArgs());
+            stopWatch.start();
+
             Object result = joinPoint.proceed();
             stopWatch.stop();
 
@@ -35,13 +35,18 @@ public class LoggingUtil {
             performanceLogger.info("{} | {} ms", methodName, stopWatch.getTotalTimeMillis());
 
             return result;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             stopWatch.stop();
-            String errorMessage = String.format("Exception in method %s: %s",
-                    methodName, e.getMessage());
-            logger.error(errorMessage, e);
-            performanceLogger.error("{} | {} ms (ERROR) - {}", methodName,
-                    stopWatch.getTotalTimeMillis(), e.getMessage());
+            String errorMessage = String.format("Exception in method %s", methodName);
+
+            logger.error("{} - Exception type: {}", errorMessage, e.getClass().getSimpleName(), e);
+
+            performanceLogger.error("{} | {} ms ({}: {})",
+                    methodName,
+                    stopWatch.getTotalTimeMillis(),
+                    e.getClass().getSimpleName(),
+                    e.getMessage());
+
             throw new LogProcessingException(errorMessage, e);
         }
     }

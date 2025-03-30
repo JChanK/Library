@@ -128,12 +128,15 @@ public class LogService {
         if (this == o) {
             return true;
         }
-        return o != null && getClass() == o.getClass();
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        return true;
     }
 
     @Override
     public int hashCode() {
-        return 31;
+        return getClass().hashCode();
     }
 
     private static class AutoDeletingTempFileResource extends InputStreamResource {
