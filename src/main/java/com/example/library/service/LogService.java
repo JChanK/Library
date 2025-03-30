@@ -13,7 +13,6 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -129,17 +128,12 @@ public class LogService {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        LogService that = (LogService) o;
-        return Objects.equals(LOG_FILE_PATH, that.LOG_FILE_PATH)
-                && Objects.equals(PERFORMANCE_FILE_PATH, that.PERFORMANCE_FILE_PATH);
+        return o != null && getClass() == o.getClass();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(LOG_FILE_PATH, PERFORMANCE_FILE_PATH);
+        return 31;
     }
 
     private static class AutoDeletingTempFileResource extends InputStreamResource {
