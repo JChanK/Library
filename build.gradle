@@ -33,12 +33,13 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.postgresql:postgresql'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
-
+    implementation 'com.sun.jna:jna-platform:5.12.1'
     // Логирование
     implementation 'org.springframework.boot:spring-boot-starter-logging'
     implementation 'ch.qos.logback:logback-classic'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
 }
 
 tasks.named('test') {

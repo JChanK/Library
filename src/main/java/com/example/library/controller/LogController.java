@@ -51,15 +51,13 @@ public class LogController {
     @Operation(
             summary = "Получить логи производительности",
             description = "Возвращает логи производительности за указанную дату",
-            responses = {   @ApiResponse(responseCode = "200",
-                    description = "Логи успешно получены"),
-                            @ApiResponse(responseCode = "404",
-                                    description = "Логи не найдены")
+            responses = {   @ApiResponse(responseCode = "200", description = "Логи успешно получены"),
+                            @ApiResponse(responseCode = "404", description = "Логи не найдены")
             }
     )
     public ResponseEntity<Resource> getPerformanceLogs(
-            @RequestParam @Parameter(description = "Дата логов в формате YYYY-MM-DD")
-            LocalDate date) {
+            @RequestParam @Parameter(description =
+                    "Дата логов в формате YYYY-MM-DD") LocalDate date) {
         try {
             return logService.getPerformanceLogsByDate(date);
         } catch (IOException e) {

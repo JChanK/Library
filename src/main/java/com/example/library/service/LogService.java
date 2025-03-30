@@ -1,6 +1,8 @@
 package com.example.library.service;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,11 +65,52 @@ public class LogService {
     private ResponseEntity<Resource> createTempFileResponse(List<String> lines,
                                                             String filename) throws IOException {
         Path tempFile = Files.createTempFile(filename.replace(".log", ""), ".log");
-        Files.write(tempFile, lines, StandardCharsets.UTF_8);
+        try {
+            Files.write(tempFile, lines, StandardCharsets.UTF_8);
 
-        return ResponseEntity.ok()
-                .header("Content-Type", "text/plain")
-                .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
-                .body(new org.springframework.core.io.UrlResource(tempFile.toUri()));
+            Resource resource = new TempFileResource(tempFile);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "text/plain")
+                    .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (IOException e) {
+            Files.deleteIfExists(tempFile);
+            throw e;
+        }
+    }
+
+    private static class TempFileResource extends org.springframework.core.io.AbstractResource {
+        private final Path path;
+
+        public TempFileResource(Path path) {
+            this.path = path;
+        }
+
+        @Override
+        public String getDescription() {
+            return "Temporary file resource [" + path + "]";
+        }
+
+        @Override
+        public InputStream getInputStream() throws IOException {
+            return new FileInputStream(path.toFile()) {
+                @Override
+                public void close() throws IOException {
+                    super.close();
+                    Files.deleteIfExists(path);
+                }
+            };
+        }
+
+        @Override
+        public boolean exists() {
+            return Files.exists(path);
+        }
+
+        @Override
+        public long contentLength() throws IOException {
+            return Files.size(path);
+        }
     }
 }
+
