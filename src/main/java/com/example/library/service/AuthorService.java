@@ -1,6 +1,8 @@
 package com.example.library.service;
 
-import com.example.library.exception.CustomException;
+import com.example.library.exception.BadRequestException;
+import com.example.library.exception.ErrorMessages;
+import com.example.library.exception.ResourceNotFoundException;
 import com.example.library.model.Author;
 import com.example.library.model.Book;
 import com.example.library.repository.AuthorRepository;
@@ -16,14 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthorService {
-
-    private static final String AUTHOR_NOT_FOUND_MESSAGE = "Author not found with id: ";
-    private static final String BOOK_NOT_FOUND_MESSAGE = "Book not found with id: ";
-    private static final String AUTHOR_NULL_MESSAGE = "Author cannot be null";
-    private static final String AUTHOR_NAME_EMPTY_MESSAGE = "Author name cannot be empty";
-    private static final String AUTHOR_SURNAME_EMPTY_MESSAGE = "Author surname cannot be empty";
-    private static final String AUTHOR_ALREADY_ASSOCIATED_MESSAGE =
-            "Author is already associated with this book";
 
     private final AuthorRepository authorRepository;
     private final BookRepository bookRepository;
@@ -41,11 +35,18 @@ public class AuthorService {
     @Transactional
     public Author create(Author author, int bookId) {
         if (author == null) {
-            throw new CustomException(AUTHOR_NULL_MESSAGE, 400);
+            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL.formatted("Author"));
+        }
+        if (author.getName() == null || author.getName().trim().isEmpty()) {
+            throw new BadRequestException(ErrorMessages.AUTHOR_NAME_EMPTY);
+        }
+        if (author.getSurname() == null || author.getSurname().trim().isEmpty()) {
+            throw new BadRequestException(ErrorMessages.AUTHOR_SURNAME_EMPTY);
         }
 
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new CustomException(BOOK_NOT_FOUND_MESSAGE + bookId, 404));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessages.BOOK_NOT_FOUND.formatted(bookId)));
 
         if (author.getBooks() == null) {
             author.setBooks(new ArrayList<>());
@@ -55,7 +56,7 @@ public class AuthorService {
                 author.getSurname());
         if (existingAuthor != null) {
             if (book.getAuthors().contains(existingAuthor)) {
-                throw new CustomException(AUTHOR_ALREADY_ASSOCIATED_MESSAGE, 400);
+                throw new BadRequestException(ErrorMessages.AUTHOR_ALREADY_ASSOCIATED);
             }
             book.getAuthors().add(existingAuthor);
             existingAuthor.getBooks().add(book);
@@ -67,9 +68,7 @@ public class AuthorService {
         book.getAuthors().add(author);
 
         Author savedAuthor = authorRepository.save(author);
-
         authorCacheId.put(savedAuthor.getId(), savedAuthor);
-
         return savedAuthor;
     }
 
@@ -84,43 +83,42 @@ public class AuthorService {
         }
 
         Author author = authorRepository.findById(id)
-                .orElseThrow(() -> new CustomException(AUTHOR_NOT_FOUND_MESSAGE + id, 404));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessages.AUTHOR_NOT_FOUND.formatted(id)));
 
         authorCacheId.put(id, author);
-
         return author;
     }
 
     @Transactional
     public Author update(int id, Author author) {
         if (author == null) {
-            throw new CustomException(AUTHOR_NULL_MESSAGE, 400);
+            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL.formatted("Author"));
         }
-
         if (author.getName() == null || author.getName().trim().isEmpty()) {
-            throw new CustomException(AUTHOR_NAME_EMPTY_MESSAGE, 400);
+            throw new BadRequestException(ErrorMessages.AUTHOR_NAME_EMPTY);
         }
         if (author.getSurname() == null || author.getSurname().trim().isEmpty()) {
-            throw new CustomException(AUTHOR_SURNAME_EMPTY_MESSAGE, 400);
+            throw new BadRequestException(ErrorMessages.AUTHOR_SURNAME_EMPTY);
         }
 
         Author existingAuthor = authorRepository.findById(id)
-                .orElseThrow(() -> new CustomException(AUTHOR_NOT_FOUND_MESSAGE + id, 404));
-
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessages.AUTHOR_NOT_FOUND.formatted(id)));
         existingAuthor.setName(author.getName());
         existingAuthor.setSurname(author.getSurname());
 
         Author updatedAuthor = authorRepository.save(existingAuthor);
 
         authorCacheId.put(id, updatedAuthor);
-
         return updatedAuthor;
     }
 
     @Transactional
     public boolean delete(int authorId) {
         Author author = authorRepository.findById(authorId)
-                .orElseThrow(() -> new CustomException(AUTHOR_NOT_FOUND_MESSAGE + authorId, 404));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessages.AUTHOR_NOT_FOUND.formatted(authorId)));
 
         Set<Book> books = new HashSet<>(author.getBooks());
         for (Book book : books) {

@@ -1,10 +1,15 @@
 package com.example.library.controller;
 
-
 import com.example.library.dto.BookDto;
 import com.example.library.mapper.BookMapper;
 import com.example.library.model.Book;
 import com.example.library.service.BookService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,11 +26,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/books")
+@Tag(name = "Book Controller", description = "API для управления книгами")
 public class BookController {
 
     private final BookService bookService;
     private final BookMapper bookMapper;
-
 
     @Autowired
     public BookController(BookService bookService, BookMapper bookMapper) {
@@ -33,19 +38,31 @@ public class BookController {
         this.bookMapper = bookMapper;
     }
 
-    // Создание книги
     @PostMapping
-    public ResponseEntity<BookDto> create(@RequestBody BookDto bookDto) {
-        Book book = bookMapper.toEntity(bookDto);
-
+    @Operation(
+            summary = "Создать книгу",
+            description = "Создает новую книгу и связывает её с авторами.",
+            responses = {   @ApiResponse(
+                            responseCode = "201",
+                            description = "Книга успешно создана",
+                            content = @Content(schema = @Schema(implementation = Book.class))),
+                            @ApiResponse(
+                            responseCode = "400",
+                            description = "Некорректные данные книги")
+            }
+    )
+    public ResponseEntity<Book> create(
+            @RequestBody
+            @Schema(description = "Данные новой книги")
+            Book book) {
         Book createdBook = bookService.create(book);
-
-        BookDto createdBookDto = bookMapper.toDto(createdBook);
-
-        return ResponseEntity.status(201).body(createdBookDto);
+        return ResponseEntity.status(201).body(createdBook);
     }
 
     @GetMapping
+    @Operation(summary = "Получить все книги", description = "Возвращает список всех книг")
+    @ApiResponse(responseCode = "200", description = "Успешный запрос",
+            content = @Content(schema = @Schema(implementation = BookDto.class)))
     public ResponseEntity<List<BookDto>> getAll() {
         List<Book> books = bookService.readAll();
 
@@ -57,6 +74,10 @@ public class BookController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Получить книгу по ID", description = "Возвращает книгу по указанному ID")
+    @ApiResponse(responseCode = "200", description = "Книга найдена",
+            content = @Content(schema = @Schema(implementation = BookDto.class)))
+    @ApiResponse(responseCode = "404", description = "Книга не найдена")
     public ResponseEntity<BookDto> getBookById(@PathVariable int id) {
         Book book = bookService.findById(id);
 
@@ -69,7 +90,14 @@ public class BookController {
     }
 
     @GetMapping("/search/by-title")
-    public ResponseEntity<BookDto> getBookByTitle(@RequestParam String title) {
+    @Operation(summary = "Получить книгу по названию", description = "Возвращает книгу по названию")
+    @ApiResponse(responseCode = "200", description = "Книга найдена",
+            content = @Content(schema = @Schema(implementation = BookDto.class)))
+    @ApiResponse(responseCode = "404", description = "Книга не найдена")
+    public ResponseEntity<BookDto> getBookByTitle(
+            @RequestParam
+            @Parameter(description = "Название книги для поиска", example = "Война и мир")
+            String title) {
         Book book = bookService.findByTitle(title);
 
         if (book != null) {
@@ -81,6 +109,11 @@ public class BookController {
     }
 
     @GetMapping("/contain")
+    @Operation(summary = "Получить книгу по слову в отзыве",
+            description = "Возвращает книгу по слову в отзыве")
+    @ApiResponse(responseCode = "200", description = "Книга найдена",
+            content = @Content(schema = @Schema(implementation = BookDto.class)))
+    @ApiResponse(responseCode = "404", description = "Книга не найдена")
     public ResponseEntity<List<BookDto>> getBooksByReviewMessageContaining(
             @RequestParam String message) {
 
@@ -98,9 +131,19 @@ public class BookController {
     }
 
     @GetMapping("/search/by-author")
+    @Operation(summary = "Получить книгу по имени и фамилии автора",
+            description = "Возвращает книгу по имени и фамилии автора")
+    @ApiResponse(responseCode = "200", description = "Книга найдена",
+            content = @Content(schema = @Schema(implementation = BookDto.class)))
+    @ApiResponse(responseCode = "404", description = "Книга не найдена")
     public ResponseEntity<List<BookDto>> getBooksByAuthorNameAndSurname(
-            @RequestParam String name,
-            @RequestParam String surname) {
+            @RequestParam
+            @Parameter(description = "Имя автора", example = "Лев")
+            String name,
+
+            @RequestParam
+            @Parameter(description = "Фамилия автора", example = "Толстой")
+            String surname) {
         List<Book> books = bookService.findBooksByAuthorNameAndSurnameNative(name, surname);
 
         List<BookDto> bookDtos = books.stream()
@@ -110,11 +153,32 @@ public class BookController {
         return ResponseEntity.ok(bookDtos);
     }
 
-    // Обновление книги
     @PutMapping("/{id}")
-    public ResponseEntity<BookDto> update(@RequestBody BookDto bookDto, @PathVariable int id) {
-        Book book = bookMapper.toEntity(bookDto);
+    @Operation(
+            summary = "Обновить книгу",
+            description = "Обновляет данные книги по указанному ID",
+            responses = {   @ApiResponse(
+                            responseCode = "200",
+                            description = "Книга успешно обновлена",
+                            content = @Content(schema = @Schema(implementation = BookDto.class))),
+                            @ApiResponse(
+                            responseCode = "400",
+                            description = "Некорректные данные книги"),
+                            @ApiResponse(
+                            responseCode = "404",
+                            description = "Книга не найдена")
+            }
+    )
+    public ResponseEntity<BookDto> update(
+            @RequestBody
+            @Schema(description = "Обновленные данные книги")
+            BookDto bookDto,
 
+            @PathVariable
+            @Parameter(description = "ID книги для обновления", example = "1")
+            int id) {
+
+        Book book = bookMapper.toEntity(bookDto);
         Book updatedBook = bookService.update(book, id);
 
         if (updatedBook != null) {
@@ -126,10 +190,26 @@ public class BookController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable int id) {
+    @Operation(
+            summary = "Удалить книгу",
+            description = "Удаляет книгу по указанному ID",
+            responses = {   @ApiResponse(
+                            responseCode = "200",
+                            description = "Книга успешно удалена"),
+                            @ApiResponse(
+                            responseCode = "404",
+                            description = "Книга не найдена")
+            }
+    )
+    public ResponseEntity<Void> delete(
+            @PathVariable
+            @Parameter(description = "ID книги для удаления", example = "1")
+            int id) {
+
         boolean isDeleted = bookService.delete(id);
         return isDeleted
                 ? ResponseEntity.ok().build()
                 : ResponseEntity.notFound().build();
     }
+
 }

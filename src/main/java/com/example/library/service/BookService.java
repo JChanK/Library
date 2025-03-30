@@ -1,6 +1,8 @@
 package com.example.library.service;
 
-import com.example.library.exception.CustomException;
+import com.example.library.exception.BadRequestException;
+import com.example.library.exception.ErrorMessages;
+import com.example.library.exception.ResourceNotFoundException;
 import com.example.library.model.Author;
 import com.example.library.model.Book;
 import com.example.library.model.Review;
@@ -44,13 +46,14 @@ public class BookService {
     @Transactional
     public Book create(Book book) {
         if (book == null) {
-            throw new CustomException("Book cannot be null", 400);
+            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
+                    .formatted("Book"));
         }
         if (book.getTitle() == null || book.getTitle().trim().isEmpty()) {
-            throw new CustomException("Book title cannot be empty", 400);
+            throw new BadRequestException(ErrorMessages.BOOK_TITLE_EMPTY);
         }
         if (book.getAuthors() == null || book.getAuthors().isEmpty()) {
-            throw new CustomException("Book must have at least one author", 400);
+            throw new BadRequestException(ErrorMessages.BOOK_NOT_FOUND);
         }
 
         Set<Author> authorsToAdd = new HashSet<>();
@@ -61,7 +64,6 @@ public class BookService {
         }
 
         book.setAuthors(new ArrayList<>(authorsToAdd));
-
         Book savedBook = bookRepository.save(book);
 
         bookCacheId.put(savedBook.getId(), savedBook);
@@ -82,42 +84,50 @@ public class BookService {
             return cachedBook;
         }
 
-        Book book = bookRepository.findById(id).orElse(null);
-        if (book != null) {
-            bookCacheId.put(id, book);
-            return book;
-        }
-        return null;
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                ErrorMessages.BOOK_NOT_FOUND.formatted(id)));
+
+        bookCacheId.put(id, book);
+        return book;
     }
 
     public Book findByTitle(String title) {
-        return bookRepository.findByTitle(title);
+        return bookRepository.findByTitle(title).orElseThrow(() ->
+                new ResourceNotFoundException(
+                        ErrorMessages.BOOK_NOT_FOUND.formatted(title)));
     }
 
     @Transactional
     public Book update(Book book, int id) {
-        Book existingBook = bookRepository.findById(id).orElse(null);
-        if (existingBook != null) {
-
-            List<Author> updatedAuthors = new ArrayList<>(new HashSet<>(book.getAuthors()));
-            existingBook.setAuthors(updatedAuthors);
-
-            Book updatedBook = bookRepository.save(book);
-            bookCacheId.put(updatedBook.getId(), updatedBook);
-
-            for (Author author : updatedAuthors) {
-                authorCacheId.put(author.getId(), author);
-            }
-
-            return updatedBook;
+        if (book == null) {
+            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
+                    .formatted("Book"));
         }
-        return null;
+
+        Book existingBook = bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessages.BOOK_NOT_FOUND.formatted(id)));
+
+        List<Author> updatedAuthors = new ArrayList<>(new HashSet<>(book.getAuthors()));
+        existingBook.setAuthors(updatedAuthors);
+        existingBook.setTitle(book.getTitle());
+
+        Book updatedBook = bookRepository.save(existingBook);
+        bookCacheId.put(updatedBook.getId(), updatedBook);
+
+        for (Author author : updatedAuthors) {
+            authorCacheId.put(author.getId(), author);
+        }
+
+        return updatedBook;
     }
 
     @Transactional
     public boolean delete(int bookId) {
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new CustomException("Book not found with id: " + bookId, 404));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessages.BOOK_NOT_FOUND.formatted(bookId)));
 
         reviewRepository.deleteAll(book.getReviews());
         for (Review review : book.getReviews()) {
@@ -144,8 +154,8 @@ public class BookService {
     public List<Book> findBooksByReviewMessageContaining(String keyword) {
         List<Book> books = bookRepository.findBooksByReviewMessageContaining(keyword);
         if (books.isEmpty()) {
-            throw new CustomException("No books found with reviews containing the message: "
-                    + keyword, 404);
+            throw new ResourceNotFoundException(
+                    String.format(ErrorMessages.REVIEWS_NOT_FOUND_WITH_KEYWORD, keyword));
         }
         return books;
     }
