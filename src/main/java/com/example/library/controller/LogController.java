@@ -51,8 +51,10 @@ public class LogController {
     @Operation(
             summary = "Получить логи производительности",
             description = "Возвращает логи производительности за указанную дату",
-            responses = {   @ApiResponse(responseCode = "200", description = "Логи успешно получены"),
-                            @ApiResponse(responseCode = "404", description = "Логи не найдены")
+            responses = {   @ApiResponse(responseCode = "200",
+                    description = "Логи успешно получены"),
+                            @ApiResponse(responseCode = "404",
+                                    description = "Логи не найдены")
             }
     )
     public ResponseEntity<Resource> getPerformanceLogs(
