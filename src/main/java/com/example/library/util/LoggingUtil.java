@@ -1,5 +1,6 @@
 package com.example.library.util;
 
+import com.example.library.exception.LogProcessingException;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -12,8 +13,8 @@ import org.springframework.util.StopWatch;
 @Aspect
 @Component
 public class LoggingUtil {
-    private final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
-    private final Logger performanceLogger = LoggerFactory.getLogger("PERFORMANCE_LOGGER");
+    private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
+    private static final Logger performanceLogger = LoggerFactory.getLogger("PERFORMANCE_LOGGER");
 
     @Pointcut("execution(* com.example.library.controller..*(..))")
     public void controllerMethods() {}
@@ -36,10 +37,12 @@ public class LoggingUtil {
             return result;
         } catch (Exception e) {
             stopWatch.stop();
-            logger.error("Exception in method {}: {}", methodName, e.getMessage(), e);
+            String errorMessage = String.format("Exception in method %s: %s",
+                    methodName, e.getMessage());
+            logger.error(errorMessage, e);
             performanceLogger.error("{} | {} ms (ERROR) - {}", methodName,
                     stopWatch.getTotalTimeMillis(), e.getMessage());
-            throw new RuntimeException("Error in " + methodName + ": " + e.getMessage(), e);
+            throw new LogProcessingException(errorMessage, e);
         }
     }
 }

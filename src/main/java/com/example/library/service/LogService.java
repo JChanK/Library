@@ -1,5 +1,6 @@
 package com.example.library.service;
 
+import com.example.library.exception.LogProcessingException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -66,14 +67,14 @@ public class LogService {
         return createTempFileResponse(filteredLines, "performance-" + dateString + ".log");
     }
 
-    private List<String> filterLinesByDate(Path path, String dateString) throws IOException {
+    private static List<String> filterLinesByDate(Path path, String dateString) throws IOException {
         return Files.lines(path, StandardCharsets.UTF_8)
                 .filter(line -> line.startsWith(dateString))
                 .collect(Collectors.toList());
     }
 
-    private ResponseEntity<Resource> createTempFileResponse(List<String> lines,
-                                                            String filename) throws IOException {
+    private ResponseEntity<Resource> createTempFileResponse(List<String> lines, String filename)
+            throws IOException {
         Path tempDir = createSecureTempDirectory();
         Path tempFile = createSecureTempFile(tempDir, filename);
 
@@ -91,11 +92,11 @@ public class LogService {
             } catch (IOException deleteEx) {
                 logger.error("Failed to delete temp file after error: {}", tempFile, deleteEx);
             }
-            throw e;
+            throw new LogProcessingException("Failed to create temp file response", e);
         }
     }
 
-    private Path createSecureTempDirectory() throws IOException {
+    private static Path createSecureTempDirectory() throws IOException {
         Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"), TEMP_DIR_NAME);
 
         if (!Files.exists(tempDir)) {
@@ -110,13 +111,13 @@ public class LogService {
         return tempDir;
     }
 
-    private Path createSecureTempFile(Path directory, String filename) throws IOException {
+    private static Path createSecureTempFile(Path directory, String filename) throws IOException {
         String safeFilename = filename.replaceAll("[^a-zA-Z0-9.-]", "_");
 
         try {
             Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rw-------");
-            FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions
-                    .asFileAttribute(perms);
+            FileAttribute<Set<PosixFilePermission>> attr =
+                    PosixFilePermissions.asFileAttribute(perms);
             return Files.createTempFile(directory, safeFilename.replace(".log", ""), ".log", attr);
         } catch (UnsupportedOperationException e) {
             return Files.createTempFile(directory, safeFilename.replace(".log", ""), ".log");
@@ -144,8 +145,6 @@ public class LogService {
     private static class AutoDeletingTempFileResource extends InputStreamResource {
         private final Path filePath;
         private final InputStream inputStream;
-        private final Logger resourceLogger = LoggerFactory
-                .getLogger(AutoDeletingTempFileResource.class);
 
         public AutoDeletingTempFileResource(Path filePath) throws IOException {
             super(Files.newInputStream(filePath));
@@ -154,7 +153,7 @@ public class LogService {
         }
 
         @Override
-        public InputStream getInputStream() throws IOException {
+        public InputStream getInputStream() {
             return inputStream;
         }
 
@@ -170,14 +169,12 @@ public class LogService {
 
         public void close() throws IOException {
             try {
-                if (inputStream != null) {
-                    inputStream.close();
-                }
+                inputStream.close();
             } finally {
                 try {
                     Files.deleteIfExists(filePath);
                 } catch (IOException e) {
-                    resourceLogger.error("Failed to delete temp file: {}", filePath, e);
+                    logger.error("Failed to delete temp file: {}", filePath, e);
                 }
             }
         }
