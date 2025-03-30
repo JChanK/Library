@@ -31,21 +31,22 @@ public class LoggingUtil {
             Object result = joinPoint.proceed();
             stopWatch.stop();
 
-            logger.info("Method {} returned: {}", methodName, result);
+            logger.info("Method {} executed successfully", methodName);
             performanceLogger.info("{} | {} ms", methodName, stopWatch.getTotalTimeMillis());
 
             return result;
         } catch (Throwable e) {
             stopWatch.stop();
-            String errorMessage = String.format("Exception in method %s", methodName);
-
-            logger.error("{} - Exception type: {}", errorMessage, e.getClass().getSimpleName(), e);
-
-            performanceLogger.error("{} | {} ms ({}: {})",
+            String errorMessage = String.format("Method %s failed with %s: %s",
                     methodName,
-                    stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName(),
                     e.getMessage());
+
+            logger.error(errorMessage, e);
+            performanceLogger.error("{} | {} ms | FAILED: {}",
+                    methodName,
+                    stopWatch.getTotalTimeMillis(),
+                    e.getClass().getSimpleName());
 
             throw new LogProcessingException(errorMessage, e);
         }

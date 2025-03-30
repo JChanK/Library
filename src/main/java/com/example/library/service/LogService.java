@@ -13,6 +13,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -125,13 +126,7 @@ public class LogService {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        return true;
+        return this == o || (o != null && getClass() == o.getClass());
     }
 
     @Override
@@ -162,6 +157,26 @@ public class LogService {
         @Override
         public long contentLength() throws IOException {
             return Files.size(filePath);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            AutoDeletingTempFileResource that = (AutoDeletingTempFileResource) o;
+            return Objects.equals(filePath, that.filePath);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), filePath);
         }
 
         public void close() throws IOException {
