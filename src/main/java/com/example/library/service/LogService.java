@@ -1,6 +1,7 @@
 package com.example.library.service;
 
 import com.example.library.exception.LogProcessingException;
+import com.example.library.exception.ResourceNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -31,11 +32,12 @@ public class LogService {
     private static final String TEMP_DIR_NAME = "library-temp-logs";
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public ResponseEntity<Resource> getLogFileByDate(LocalDate date) throws IOException {
+    public ResponseEntity<Resource> getLogFileByDate(LocalDate date)
+            throws IOException, ResourceNotFoundException {
         Path path = Paths.get(LOG_FILE_PATH);
         if (!Files.exists(path)) {
             logger.warn("Log file not found at path: {}", LOG_FILE_PATH);
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("Log file not found");
         }
 
         String dateString = date.format(DATE_FORMAT);
@@ -43,10 +45,14 @@ public class LogService {
 
         if (filteredLines.isEmpty()) {
             logger.info("No log entries found for date: {}", dateString);
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("No logs found for date: " + dateString);
         }
 
-        return createTempFileResponse(filteredLines, "logs-" + dateString + ".log");
+        try {
+            return createTempFileResponse(filteredLines, "logs-" + dateString + ".log");
+        } catch (IOException e) {
+            throw new LogProcessingException("Failed to process log file", e);
+        }
     }
 
     public ResponseEntity<Resource> getPerformanceLogsByDate(LocalDate date) throws IOException {

@@ -1,6 +1,8 @@
 package com.example.library.controller;
 
 import com.example.library.dto.AuthorDto;
+import com.example.library.exception.BadRequestException;
+import com.example.library.exception.ResourceNotFoundException;
 import com.example.library.mapper.AuthorMapper;
 import com.example.library.model.Author;
 import com.example.library.service.AuthorService;
@@ -62,11 +64,16 @@ public class AuthorController {
             @Parameter(description = "ID книги для связи", example = "1")
             int bookId) {
 
-        Author author = authorMapper.toEntity(authorDto);
-        Author createdAuthor = authorService.create(author, bookId);
-        AuthorDto createdAuthorDto = authorMapper.toDto(createdAuthor);
-
-        return ResponseEntity.status(201).body(createdAuthorDto);
+        try {
+            Author author = authorMapper.toEntity(authorDto);
+            Author createdAuthor = authorService.create(author, bookId);
+            AuthorDto createdAuthorDto = authorMapper.toDto(createdAuthor);
+            return ResponseEntity.status(201).body(createdAuthorDto);
+        } catch (ResourceNotFoundException | BadRequestException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new RuntimeException("Internal server error", ex);
+        }
     }
 
     @GetMapping
@@ -80,13 +87,15 @@ public class AuthorController {
             }
     )
     public ResponseEntity<List<AuthorDto>> getAll() {
-        List<Author> authors = authorService.readAll();
-
-        List<AuthorDto> authorDtos = authors.stream()
-                .map(authorMapper::toDto)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(authorDtos);
+        try {
+            List<Author> authors = authorService.readAll();
+            List<AuthorDto> authorDtos = authors.stream()
+                    .map(authorMapper::toDto)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(authorDtos);
+        } catch (Exception ex) {
+            throw new RuntimeException("Internal server error", ex);
+        }
     }
 
     @GetMapping("/{id}")
@@ -107,13 +116,14 @@ public class AuthorController {
             @Parameter(description = "ID автора", example = "1")
             int id) {
 
-        Author author = authorService.findById(id);
-
-        if (author != null) {
+        try {
+            Author author = authorService.findById(id);
             AuthorDto authorDto = authorMapper.toDto(author);
             return ResponseEntity.ok(authorDto);
-        } else {
-            return ResponseEntity.notFound().build();
+        } catch (ResourceNotFoundException ex) {
+            throw ex; // Вернет 404
+        } catch (Exception ex) {
+            throw new RuntimeException("Internal server error", ex);
         }
     }
 
@@ -134,9 +144,13 @@ public class AuthorController {
             @Parameter(description = "ID автора для удаления", example = "1")
             int id) {
 
-        boolean isDeleted = authorService.delete(id);
-        return isDeleted
-                ? ResponseEntity.ok().build()
-                : ResponseEntity.notFound().build();
+        try {
+            authorService.delete(id);
+            return ResponseEntity.ok().build();
+        } catch (ResourceNotFoundException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new RuntimeException("Internal server error", ex);
+        }
     }
 }

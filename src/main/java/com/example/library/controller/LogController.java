@@ -1,5 +1,6 @@
 package com.example.library.controller;
 
+import com.example.library.exception.ResourceNotFoundException;
 import com.example.library.service.LogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -39,31 +40,7 @@ public class LogController {
     )
     public ResponseEntity<Resource> getAppLogFile(
             @RequestParam @Parameter(description = "Дата логов в формате YYYY-MM-DD")
-            LocalDate date) {
-        try {
-            return logService.getLogFileByDate(date);
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    @GetMapping("/performance")
-    @Operation(
-            summary = "Получить логи производительности",
-            description = "Возвращает логи производительности за указанную дату",
-            responses = {   @ApiResponse(responseCode = "200",
-                    description = "Логи успешно получены"),
-                            @ApiResponse(responseCode = "404",
-                                    description = "Логи не найдены")
-            }
-    )
-    public ResponseEntity<Resource> getPerformanceLogs(
-            @RequestParam @Parameter(description =
-                    "Дата логов в формате YYYY-MM-DD") LocalDate date) {
-        try {
-            return logService.getPerformanceLogsByDate(date);
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().build();
-        }
+            LocalDate date) throws IOException, ResourceNotFoundException {
+        return logService.getLogFileByDate(date);
     }
 }

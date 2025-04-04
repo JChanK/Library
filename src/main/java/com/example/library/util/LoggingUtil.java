@@ -1,6 +1,6 @@
 package com.example.library.util;
 
-import com.example.library.exception.LogProcessingException;
+import com.example.library.exception.ResourceNotFoundException;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -24,31 +24,29 @@ public class LoggingUtil {
         StopWatch stopWatch = new StopWatch();
         String methodName = joinPoint.getSignature().toShortString();
 
+        logger.info("Method called: {} with args: {}", methodName, joinPoint.getArgs());
+        stopWatch.start();
+
         try {
-            logger.info("Method called: {} with args: {}", methodName, joinPoint.getArgs());
-            stopWatch.start();
-
-            Object result = joinPoint.proceed();
             stopWatch.stop();
-
+            Object result = joinPoint.proceed();
             logger.info("Method {} executed successfully", methodName);
             performanceLogger.info("{} | {} ms", methodName, stopWatch.getTotalTimeMillis());
-
             return result;
-        } catch (Throwable e) {
+        } catch (ResourceNotFoundException e) {
             stopWatch.stop();
-            String errorMessage = String.format("Method %s failed with %s: %s",
-                    methodName,
-                    e.getClass().getSimpleName(),
-                    e.getMessage());
-
-            logger.error(errorMessage, e);
+            logger.error("Method {} failed: ResourceNotFound - {}", methodName, e.getMessage());
+            performanceLogger.error("{} | {} ms | NOT_FOUND", methodName,
+                    stopWatch.getTotalTimeMillis());
+            throw e;
+        } catch (Exception e) {
+            stopWatch.stop();
+            logger.error("Method {} failed: {} - {}", methodName,
+                    e.getClass().getSimpleName(), e.getMessage());
             performanceLogger.error("{} | {} ms | FAILED: {}",
-                    methodName,
-                    stopWatch.getTotalTimeMillis(),
+                    methodName, stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName());
-
-            throw new LogProcessingException(errorMessage, e);
+            throw e;
         }
     }
 }

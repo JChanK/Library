@@ -162,7 +162,13 @@ public class BookService {
 
     public List<Book> findBooksByAuthorNameAndSurnameNative(String authorName,
                                                             String authorSurname) {
-        return bookRepository.findBooksByAuthorNameAndSurnameNative(authorName, authorSurname);
+        List<Book> books = bookRepository.findBooksByAuthorNameAndSurnameNative(authorName,
+                authorSurname);
+        if (books.isEmpty()) {
+            throw new ResourceNotFoundException(
+                    String.format("No books found for author: %s %s", authorName, authorSurname));
+        }
+        return books;
     }
 
 }

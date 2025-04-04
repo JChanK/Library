@@ -54,12 +54,20 @@ public class ReviewService {
     }
 
     public List<Review> getReviewsByBookId(int bookId) {
+        if (!bookRepository.existsById(bookId)) {
+            throw new ResourceNotFoundException(ErrorMessages.BOOK_NOT_FOUND.formatted(bookId));
+        }
+
         List<Review> cachedReviews = reviewCacheId.get(bookId);
         if (cachedReviews != null) {
             return cachedReviews;
         }
 
         List<Review> reviews = reviewRepository.findByBookId(bookId);
+
+        if (reviews.isEmpty()) {
+            throw new ResourceNotFoundException("No reviews found for book with id: " + bookId);
+        }
 
         reviewCacheId.put(bookId, reviews);
         return reviews;
