@@ -1,5 +1,6 @@
 package com.example.library.util;
 
+import com.example.library.exception.BadRequestException;
 import com.example.library.exception.ResourceNotFoundException;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -24,25 +25,32 @@ public class LoggingUtil {
         StopWatch stopWatch = new StopWatch();
         String methodName = joinPoint.getSignature().toShortString();
 
-        logger.info("Method called: {} with args: {}", methodName, joinPoint.getArgs());
+        logger.debug("Method called: {} with args: {}", methodName, joinPoint.getArgs());
         stopWatch.start();
 
         try {
-            stopWatch.stop();
             Object result = joinPoint.proceed();
-            logger.info("Method {} executed successfully", methodName);
-            performanceLogger.info("{} | {} ms", methodName, stopWatch.getTotalTimeMillis());
-            return result;
-        } catch (ResourceNotFoundException e) {
             stopWatch.stop();
-            logger.error("Method {} failed: ResourceNotFound - {}", methodName, e.getMessage());
-            performanceLogger.error("{} | {} ms | NOT_FOUND", methodName,
-                    stopWatch.getTotalTimeMillis());
+
+            logger.debug("Method {} executed successfully in {} ms",
+                    methodName, stopWatch.getTotalTimeMillis());
+            performanceLogger.info("{} | {} ms | SUCCESS",
+                    methodName, stopWatch.getTotalTimeMillis());
+            return result;
+        } catch (ResourceNotFoundException | BadRequestException e) {
+            if (stopWatch.isRunning()) {
+                stopWatch.stop();
+            }
+            logger.debug("Business exception in {}: {}", methodName, e.getMessage());
+            performanceLogger.warn("{} | {} ms | {}: {}",
+                    methodName, stopWatch.getTotalTimeMillis(),
+                    e.getClass().getSimpleName(), e.getMessage());
             throw e;
         } catch (Exception e) {
-            stopWatch.stop();
-            logger.error("Method {} failed: {} - {}", methodName,
-                    e.getClass().getSimpleName(), e.getMessage());
+            if (stopWatch.isRunning()) {
+                stopWatch.stop();
+            }
+            logger.error("Unexpected error in {}: {}", methodName, e.getMessage(), e);
             performanceLogger.error("{} | {} ms | FAILED: {}",
                     methodName, stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName());

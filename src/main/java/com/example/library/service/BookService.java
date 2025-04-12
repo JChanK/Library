@@ -86,7 +86,7 @@ public class BookService {
 
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                ErrorMessages.BOOK_NOT_FOUND.formatted(id)));
+                        ErrorMessages.BOOK_NOT_FOUND.formatted(id)));
 
         bookCacheId.put(id, book);
         return book;
@@ -172,4 +172,3 @@ public class BookService {
     }
 
 }
-

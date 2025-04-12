@@ -8,7 +8,6 @@ class LibraryApplicationTests {
 
     @Test
     void contextLoads() {
-        // проверка, что контекст приложения загружается без ошибок
     }
 
 }

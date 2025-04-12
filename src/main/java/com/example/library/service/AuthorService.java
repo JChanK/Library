@@ -2,6 +2,7 @@ package com.example.library.service;
 
 import com.example.library.exception.BadRequestException;
 import com.example.library.exception.ErrorMessages;
+import com.example.library.exception.InvalidProperNameException;
 import com.example.library.exception.ResourceNotFoundException;
 import com.example.library.model.Author;
 import com.example.library.model.Book;
@@ -32,21 +33,40 @@ public class AuthorService {
         this.authorCacheId = authorCacheId;
     }
 
+    private void validateAuthorName(String name, String fieldName) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new BadRequestException(fieldName.equals("name")
+                    ? ErrorMessages.AUTHOR_NAME_EMPTY
+                    : ErrorMessages.AUTHOR_SURNAME_EMPTY);
+        }
+
+        if (!Character.isUpperCase(name.charAt(0))) {
+            throw new InvalidProperNameException(name);
+        }
+
+        if (!name.matches("[A-Z][a-zA-Z\\s-]+")) {
+            throw new InvalidProperNameException(name);
+        }
+    }
+
     @Transactional
     public Author create(Author author, int bookId) {
         if (author == null) {
             throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL.formatted("Author"));
         }
+        validateAuthorName(author.getName(), "name");
+        validateAuthorName(author.getSurname(), "surname");
+
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessages.BOOK_NOT_FOUND.formatted(bookId)));
+
         if (author.getName() == null || author.getName().trim().isEmpty()) {
             throw new BadRequestException(ErrorMessages.AUTHOR_NAME_EMPTY);
         }
         if (author.getSurname() == null || author.getSurname().trim().isEmpty()) {
             throw new BadRequestException(ErrorMessages.AUTHOR_SURNAME_EMPTY);
         }
-
-        Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorMessages.BOOK_NOT_FOUND.formatted(bookId)));
 
         if (author.getBooks() == null) {
             author.setBooks(new ArrayList<>());

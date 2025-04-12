@@ -27,5 +27,13 @@ public final class ErrorMessages {
     public static final String REVIEWS_NOT_FOUND_WITH_KEYWORD =
             "No books found with reviews containing the message: %s";
 
+    public static final String AUTHOR_NAME_INVALID =
+            "Author name must start with capital letter and contain only letters, spaces or hyphens";
+    public static final String AUTHOR_SURNAME_INVALID =
+            "Author surname must start with capital letter and contain only letters, spaces or hyphens";
+
+    public static final String LIST_CANNOT_BE_NULL_OR_EMPTY = "%s cannot be null or empty";
+    public static final String BOOK_AUTHORS_EMPTY = "is empty";
+
     private ErrorMessages() {}
 }

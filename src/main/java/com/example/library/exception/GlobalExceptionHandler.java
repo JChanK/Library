@@ -15,6 +15,28 @@ import org.springframework.web.context.request.WebRequest;
 public class GlobalExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    private ResponseEntity<ErrorResponse> buildErrorResponse(BaseException ex, WebRequest request) {
+        return buildErrorResponse(ex.getHttpStatus(), ex.getMessage(), request);
+    }
+
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status,
+                                                             String message, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                status,
+                message,
+                request.getDescription(false).replace("uri=", "")
+        );
+        return new ResponseEntity<>(errorResponse, status);
+    }
+
+    private Throwable getRootCause(Throwable throwable) {
+        Throwable rootCause = throwable;
+        while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
+            rootCause = rootCause.getCause();
+        }
+        return rootCause;
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(
             ResourceNotFoundException ex, WebRequest request) {
@@ -51,42 +73,6 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex, WebRequest request) {
-        logger.error("Internal server error", ex);
-
-        // Проверяем, не было ли наше исключение обернуто в другое
-        Throwable rootCause = getRootCause(ex);
-        if (rootCause instanceof BaseException) {
-            return buildErrorResponse((BaseException) rootCause, request);
-        }
-
-        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Internal Server Error", request);
-    }
-
-    private ResponseEntity<ErrorResponse> buildErrorResponse(BaseException ex, WebRequest request) {
-        return buildErrorResponse(ex.getHttpStatus(), ex.getMessage(), request);
-    }
-
-    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status,
-                                                             String message, WebRequest request) {
-        ErrorResponse errorResponse = new ErrorResponse(
-                status,
-                message,
-                request.getDescription(false).replace("uri=", "")
-        );
-        return new ResponseEntity<>(errorResponse, status);
-    }
-
-    private Throwable getRootCause(Throwable throwable) {
-        Throwable rootCause = throwable;
-        while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
-            rootCause = rootCause.getCause();
-        }
-        return rootCause;
-    }
-
     @ExceptionHandler(LogProcessingException.class)
     public ResponseEntity<ErrorResponse> handleLogProcessingException(
             LogProcessingException ex, WebRequest request) {
@@ -95,4 +81,5 @@ public class GlobalExceptionHandler {
                 "Error processing log file",
                 request);
     }
+
 }
