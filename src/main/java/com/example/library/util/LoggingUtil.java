@@ -50,20 +50,17 @@ public class LoggingUtil {
                 stopWatch.stop();
             }
 
-            // Логируем бизнес-исключение
+            // Логируем бизнес-исключение с полным стектрейсом на DEBUG уровне
             logger.warn("Business exception in method '{}': {}", methodName, e.getMessage());
+            logger.debug("Business exception stack trace:", e);
             performanceLogger.warn("{} | {} ms | {}: {}",
                     methodName,
                     stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName(),
                     e.getMessage());
 
-            // Повторно выбрасываем исключение с контекстом
-            throw new LogProcessingException(
-                    String.format("Business exception occurred in method '%s'. Cause: %s",
-                            methodName, e.getMessage()),
-                    e
-            );
+            // Пробрасываем оригинальное исключение, так как оно уже было залогировано
+            throw e;
 
         } catch (Throwable e) {
             // Останавливаем таймер, если он еще работает
@@ -78,7 +75,7 @@ public class LoggingUtil {
                     stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName());
 
-            // Повторно выбрасываем неожиданное исключение с контекстом
+            // Пробрасываем исключение с контекстной информацией
             throw new LogProcessingException(
                     String.format("Unexpected error occurred in method '%s'. Cause: %s", methodName,
                             e.getMessage()),
