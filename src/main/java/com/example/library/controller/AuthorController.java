@@ -1,5 +1,6 @@
 package com.example.library.controller;
 
+import com.example.library.annotation.CountVisit;
 import com.example.library.dto.AuthorDto;
 import com.example.library.exception.BadRequestException;
 import com.example.library.exception.ResourceNotFoundException;
@@ -77,6 +78,7 @@ public class AuthorController {
     }
 
     @GetMapping
+    @CountVisit
     @Operation(
             summary = "Получить всех авторов",
             description = "Возвращает список всех авторов",
@@ -99,6 +101,7 @@ public class AuthorController {
     }
 
     @GetMapping("/{id}")
+    @CountVisit
     @Operation(
             summary = "Получить автора по ID",
             description = "Возвращает автора по указанному ID",

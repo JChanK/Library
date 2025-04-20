@@ -1,5 +1,6 @@
 package com.example.library.controller;
 
+import com.example.library.annotation.CountVisit;
 import com.example.library.dto.BookDto;
 import com.example.library.exception.ErrorMessages;
 import com.example.library.exception.ResourceNotFoundException;
@@ -61,6 +62,7 @@ public class BookController {
     }
 
     @GetMapping
+    @CountVisit("/books")
     @Operation(summary = "Получить все книги", description = "Возвращает список всех книг")
     @ApiResponse(responseCode = "200", description = "Успешный запрос",
             content = @Content(schema = @Schema(implementation = BookDto.class)))
@@ -73,6 +75,7 @@ public class BookController {
     }
 
     @GetMapping("/{id}")
+    @CountVisit
     @Operation(summary = "Получить книгу по ID", description = "Возвращает книгу по указанному ID")
     @ApiResponse(responseCode = "200", description = "Книга найдена",
             content = @Content(schema = @Schema(implementation = BookDto.class)))
@@ -89,6 +92,7 @@ public class BookController {
     }
 
     @GetMapping("/search/by-title")
+    @CountVisit("/books/search/by-title")
     @Operation(summary = "Получить книгу по названию", description = "Возвращает книгу по названию")
     public ResponseEntity<BookDto> getBookByTitle(
             @RequestParam
@@ -107,6 +111,7 @@ public class BookController {
     }
 
     @GetMapping("/contain")
+    @CountVisit("/books/contain")
     @Operation(summary = "Получить книгу по слову в отзыве",
             description = "Возвращает книгу по слову в отзыве")
     @ApiResponse(responseCode = "200", description = "Книга найдена",
@@ -129,6 +134,7 @@ public class BookController {
     }
 
     @GetMapping("/search/by-author")
+    @CountVisit
     @Operation(summary = "Получить книгу по имени и фамилии автора",
             description = "Возвращает книгу по имени и фамилии автора")
     @ApiResponse(responseCode = "200", description = "Книга найдена",

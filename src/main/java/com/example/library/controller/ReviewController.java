@@ -1,5 +1,6 @@
 package com.example.library.controller;
 
+import com.example.library.annotation.CountVisit;
 import com.example.library.dto.ReviewDto;
 import com.example.library.mapper.ReviewMapper;
 import com.example.library.model.Review;
@@ -70,6 +71,7 @@ public class ReviewController {
     }
 
     @GetMapping
+    @CountVisit
     @Operation(
             summary = "Получить отзывы книги",
             description = "Возвращает все отзывы для указанной книги",
@@ -97,6 +99,7 @@ public class ReviewController {
     }
 
     @GetMapping("/{id}")
+    @CountVisit
     @Operation(
             summary = "Получить отзыв по ID",
             description = "Возвращает отзыв по указанному ID",

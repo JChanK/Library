@@ -140,7 +140,7 @@ public class LogService {
         return getClass().hashCode();
     }
 
-    private static class AutoDeletingTempFileResource extends InputStreamResource {
+    static class AutoDeletingTempFileResource extends InputStreamResource {
         private final Path filePath;
         private final InputStream inputStream;
 
@@ -196,5 +196,10 @@ public class LogService {
                 }
             }
         }
+
+        public Path getFilePath() {
+            return filePath;
+        }
     }
+
 }
