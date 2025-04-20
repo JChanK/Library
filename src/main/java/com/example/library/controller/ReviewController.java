@@ -171,4 +171,42 @@ public class ReviewController {
         reviewService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/bulk")
+    @Operation(
+            summary = "Создать несколько отзывов",
+            description = "Создает несколько отзывов для указанной книги",
+            responses = {   @ApiResponse(
+                            responseCode = "201",
+                            description = "Отзывы успешно созданы",
+                            content = @Content(schema = @Schema(implementation = ReviewDto[]
+                                    .class))),
+                            @ApiResponse(
+                            responseCode = "400",
+                            description = "Некорректные данные отзывов"),
+                            @ApiResponse(
+                            responseCode = "404",
+                            description = "Книга не найдена")
+            }
+    )
+    public ResponseEntity<List<ReviewDto>> createBulk(
+            @PathVariable
+            @Parameter(description = "ID книги", example = "1")
+            int bookId,
+
+            @RequestBody
+            @Schema(description = "Список данных отзывов")
+            List<ReviewDto> reviewDtos) {
+
+        List<Review> reviews = reviewDtos.stream()
+                .map(reviewMapper::toEntity)
+                .collect(Collectors.toList());
+
+        List<Review> createdReviews = reviewService.createBulk(reviews, bookId);
+        List<ReviewDto> createdReviewDtos = createdReviews.stream()
+                .map(reviewMapper::toDto)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.status(201).body(createdReviewDtos);
+    }
 }

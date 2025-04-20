@@ -153,4 +153,42 @@ public class AuthorController {
             throw new RuntimeException("Internal server error", ex);
         }
     }
+
+    @PostMapping("/bulk")
+    @Operation(
+            summary = "Создать несколько авторов",
+            description = "Создает несколько авторов и связывает их с книгой",
+            responses = {   @ApiResponse(
+                            responseCode = "201",
+                            description = "Авторы успешно созданы",
+                            content = @Content(schema = @Schema
+                                    (implementation = AuthorDto[].class))),
+                            @ApiResponse(
+                            responseCode = "400",
+                            description = "Некорректные данные авторов"),
+                            @ApiResponse(
+                            responseCode = "404",
+                            description = "Книга не найдена")
+            }
+    )
+    public ResponseEntity<List<AuthorDto>> createBulk(
+            @RequestBody
+            @Schema(description = "Список данных авторов", required = true)
+            List<AuthorDto> authorDtos,
+
+            @RequestParam
+            @Parameter(description = "ID книги для связи", example = "1")
+            int bookId) {
+
+        List<Author> authors = authorDtos.stream()
+                .map(authorMapper::toEntity)
+                .collect(Collectors.toList());
+
+        List<Author> createdAuthors = authorService.createBulk(authors, bookId);
+        List<AuthorDto> createdAuthorDtos = createdAuthors.stream()
+                .map(authorMapper::toDto)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.status(201).body(createdAuthorDtos);
+    }
 }

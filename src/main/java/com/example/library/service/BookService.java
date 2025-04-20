@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -129,24 +130,31 @@ public class BookService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorMessages.BOOK_NOT_FOUND.formatted(bookId)));
 
-        reviewRepository.deleteAll(book.getReviews());
-        for (Review review : book.getReviews()) {
-            reviewCacheId.evict(review.getId());
-        }
-
-        Set<Author> authors = new HashSet<>(book.getAuthors());
-        for (Author author : authors) {
-            author.getBooks().remove(book);
-            authorRepository.save(author);
-
-            if (author.getBooks().isEmpty()) {
-                authorRepository.delete(author);
-                authorCacheId.evict(author.getId());
+        // Удаление отзывов
+        if (book.getReviews() != null) {
+            reviewRepository.deleteAll(book.getReviews());
+            for (Review review : book.getReviews()) {
+                reviewCacheId.evict(review.getId());
             }
         }
 
-        bookRepository.delete(book);
+        if (book.getAuthors() != null) {
+            Set<Author> authors = new HashSet<>(book.getAuthors());
+            for (Author author : authors) {
+                if (author.getBooks() != null) {
+                    author.getBooks().remove(book);
+                    authorRepository.save(author);
+
+                    if (author.getBooks().isEmpty()) {
+                        authorRepository.delete(author);
+                        authorCacheId.evict(author.getId());
+                    }
+                }
+            }
+        }
+
         bookCacheId.evict(bookId);
+        bookRepository.delete(book);
 
         return true;
     }
@@ -169,6 +177,44 @@ public class BookService {
                     String.format("No books found for author: %s %s", authorName, authorSurname));
         }
         return books;
+    }
+
+    @Transactional
+    public List<Book> createBulk(List<Book> books) {
+        if (books == null || books.isEmpty()) {
+            throw new BadRequestException(ErrorMessages.LIST_CANNOT_BE_NULL_OR_EMPTY
+                    .formatted("Books"));
+        }
+
+        return books.stream()
+                .peek(book -> {
+                    if (book == null) {
+                        throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
+                                .formatted("Book"));
+                    }
+                    if (book.getTitle() == null || book.getTitle().trim().isEmpty()) {
+                        throw new BadRequestException(ErrorMessages.BOOK_TITLE_EMPTY);
+                    }
+                    if (book.getAuthors() == null || book.getAuthors().isEmpty()) {
+                        throw new BadRequestException(ErrorMessages.BOOK_AUTHORS_EMPTY);
+                    }
+                })
+                .map(book -> {
+                    Set<Author> authorsToAdd = new HashSet<>();
+                    for (Author author : book.getAuthors()) {
+                        Author existingAuthor = authorRepository
+                                .findByNameAndSurname(author.getName(), author.getSurname());
+                        authorsToAdd.add(Objects.requireNonNullElse(existingAuthor, author));
+                    }
+                    book.setAuthors(new ArrayList<>(authorsToAdd));
+                    Book savedBook = bookRepository.save(book);
+                    bookCacheId.put(savedBook.getId(), savedBook);
+                    for (Author author : savedBook.getAuthors()) {
+                        authorCacheId.put(author.getId(), author);
+                    }
+                    return savedBook;
+                })
+                .collect(Collectors.toList());
     }
 
 }

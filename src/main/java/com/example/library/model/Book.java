@@ -2,6 +2,7 @@ package com.example.library.model;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.CascadeType;
@@ -34,7 +35,7 @@ public class Book {
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH,
                            CascadeType.DETACH}, fetch = FetchType.LAZY)
-    @JsonIgnore
+    @JsonIgnoreProperties("books")
     @JoinTable(
             name = "book_author",
             joinColumns = @JoinColumn(name = "book_id"),

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +34,7 @@ public class AuthorService {
         this.authorCacheId = authorCacheId;
     }
 
-    private void validateAuthorName(String name, String fieldName) {
+    void validateAuthorName(String name, String fieldName) {
         if (name == null || name.trim().isEmpty()) {
             throw new BadRequestException(fieldName.equals("name")
                     ? ErrorMessages.AUTHOR_NAME_EMPTY
@@ -57,10 +58,6 @@ public class AuthorService {
         validateAuthorName(author.getName(), "name");
         validateAuthorName(author.getSurname(), "surname");
 
-        Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorMessages.BOOK_NOT_FOUND.formatted(bookId)));
-
         if (author.getName() == null || author.getName().trim().isEmpty()) {
             throw new BadRequestException(ErrorMessages.AUTHOR_NAME_EMPTY);
         }
@@ -71,6 +68,10 @@ public class AuthorService {
         if (author.getBooks() == null) {
             author.setBooks(new ArrayList<>());
         }
+
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessages.BOOK_NOT_FOUND.formatted(bookId)));
 
         Author existingAuthor = authorRepository.findByNameAndSurname(author.getName(),
                 author.getSurname());
@@ -153,6 +154,55 @@ public class AuthorService {
         authorRepository.delete(author);
         authorCacheId.evict(authorId);
         return true;
+    }
+
+    @Transactional
+    public List<Author> createBulk(List<Author> authors, int bookId) {
+        if (authors == null || authors.isEmpty()) {
+            throw new BadRequestException(ErrorMessages.LIST_CANNOT_BE_NULL_OR_EMPTY
+                    .formatted("Authors"));
+        }
+
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessages.BOOK_NOT_FOUND.formatted(bookId)));
+
+        return authors.stream()
+                .peek(author -> {
+                    if (author == null) {
+                        throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
+                                .formatted("Author"));
+                    }
+                    validateAuthorName(author.getName(), "name");
+                    validateAuthorName(author.getSurname(), "surname");
+
+                    if (author.getBooks() == null) {
+                        author.setBooks(new ArrayList<>());
+                    }
+                })
+                .map(author -> {
+                    Author existingAuthor = authorRepository.findByNameAndSurname(
+                            author.getName(),
+                            author.getSurname()
+                    );
+
+                    if (existingAuthor != null) {
+                        if (book.getAuthors().contains(existingAuthor)) {
+                            throw new BadRequestException(ErrorMessages.AUTHOR_ALREADY_ASSOCIATED);
+                        }
+                        book.getAuthors().add(existingAuthor);
+                        existingAuthor.getBooks().add(book);
+                        bookRepository.save(book);
+                        return existingAuthor;
+                    } else {
+                        author.getBooks().add(book);
+                        book.getAuthors().add(author);
+                        Author savedAuthor = authorRepository.save(author);
+                        authorCacheId.put(savedAuthor.getId(), savedAuthor);
+                        return savedAuthor;
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
 }

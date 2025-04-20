@@ -202,4 +202,24 @@ public class BookController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/bulk")
+    @Operation(
+            summary = "Создать несколько книг",
+            description = "Создает несколько книг и связывает их с авторами",
+            responses = {   @ApiResponse(
+                            responseCode = "201",
+                            description = "Книги успешно созданы",
+                            content = @Content(schema = @Schema(implementation = BookDto[].class))),
+                            @ApiResponse(
+                            responseCode = "400",
+                            description = "Некорректные данные книг")
+            }
+    )
+    public ResponseEntity<List<BookDto>> createBulk(@RequestBody List<Book> books) {
+        List<Book> createdBooks = bookService.createBulk(books);
+        List<BookDto> result = createdBooks.stream()
+                .map(bookMapper::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
 }

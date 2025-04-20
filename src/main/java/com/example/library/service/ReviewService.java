@@ -9,6 +9,7 @@ import com.example.library.repository.BookRepository;
 import com.example.library.repository.ReviewRepository;
 import com.example.library.util.CacheUtil;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +48,7 @@ public class ReviewService {
         review.setBook(book);
         Review savedReview = reviewRepository.save(review);
 
+        // Only evict caches once
         reviewCacheId.evict(bookId);
         bookCacheId.evict(bookId);
 
@@ -109,6 +111,35 @@ public class ReviewService {
 
         reviewCacheId.evict(bookId);
         bookCacheId.evict(bookId);
+    }
+
+    @Transactional
+    public List<Review> createBulk(List<Review> reviews, int bookId) {
+        if (reviews == null || reviews.isEmpty()) {
+            throw new BadRequestException(ErrorMessages.LIST_CANNOT_BE_NULL_OR_EMPTY
+                    .formatted("Reviews"));
+        }
+
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessages.BOOK_NOT_FOUND.formatted(bookId)));
+
+        return reviews.stream()
+                .peek(review -> {
+                    if (review == null) {
+                        throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
+                                .formatted("Review"));
+                    }
+                    if (review.getMessage() == null || review.getMessage().trim().isEmpty()) {
+                        throw new BadRequestException(ErrorMessages.REVIEW_MESSAGE_EMPTY);
+                    }
+                })
+                .map(review -> {
+                    review.setBook(book);
+                    Review savedReview = reviewRepository.save(review);
+                    return savedReview;
+                })
+                .collect(Collectors.toList());
     }
 
 }

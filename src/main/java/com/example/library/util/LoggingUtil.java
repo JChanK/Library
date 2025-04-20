@@ -29,9 +29,8 @@ public class LoggingUtil {
         stopWatch.start();
 
         try {
-            Object result = joinPoint.proceed();
             stopWatch.stop();
-
+            Object result = joinPoint.proceed();
             logger.debug("Method {} executed successfully in {} ms",
                     methodName, stopWatch.getTotalTimeMillis());
             performanceLogger.info("{} | {} ms | SUCCESS",
