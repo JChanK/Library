@@ -21,7 +21,7 @@ public class LoggingUtil {
 
     @SuppressWarnings({"checkstyle:Indentation", "checkstyle:VariableDeclarationUsageDistance"})
     @Around("controllerMethods()")
-    public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
+    public Object logMethodExecution(ProceedingJoinPoint joinPoint) {
         StopWatch stopWatch = new StopWatch();
         String methodName = joinPoint.getSignature().toShortString();
 
@@ -30,7 +30,7 @@ public class LoggingUtil {
         stopWatch.start();
 
             // Выполняем метод
-            Object result = joinPoint.proceed();
+            Object result = joinPoint;
             stopWatch.stop();
 
             // Логируем успешное выполнение
