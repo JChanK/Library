@@ -1,6 +1,7 @@
 package com.example.library.util;
 
 import com.example.library.exception.BadRequestException;
+import com.example.library.exception.LogProcessingException;
 import com.example.library.exception.ResourceNotFoundException;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -29,8 +30,8 @@ public class LoggingUtil {
         stopWatch.start();
 
         try {
-            stopWatch.stop();
             Object result = joinPoint.proceed();
+            stopWatch.stop();
             logger.debug("Method {} executed successfully in {} ms",
                     methodName, stopWatch.getTotalTimeMillis());
             performanceLogger.info("{} | {} ms | SUCCESS",
@@ -44,7 +45,7 @@ public class LoggingUtil {
             performanceLogger.warn("{} | {} ms | {}: {}",
                     methodName, stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName(), e.getMessage());
-            throw e;
+            throw new LogProcessingException("Business exception in method: " + methodName, e);
         } catch (Exception e) {
             if (stopWatch.isRunning()) {
                 stopWatch.stop();
@@ -53,7 +54,7 @@ public class LoggingUtil {
             performanceLogger.error("{} | {} ms | FAILED: {}",
                     methodName, stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName());
-            throw e;
+            throw new LogProcessingException("Unexpected error in method: " + methodName, e);
         }
     }
 }

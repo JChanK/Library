@@ -22,6 +22,8 @@ public class ReviewService {
     private final CacheUtil<Integer, List<Review>> reviewCacheId;
     private final CacheUtil<Integer, Book> bookCacheId;
 
+    private static final String REVIEW_ENTITY_NAME = "Review";
+
     @Autowired
     public ReviewService(ReviewRepository reviewRepository, BookRepository bookRepository,
                          CacheUtil<Integer, List<Review>> reviewCacheId,
@@ -35,7 +37,8 @@ public class ReviewService {
     @Transactional
     public Review create(Review review, int bookId) {
         if (review == null) {
-            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL.formatted("Review"));
+            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
+                    .formatted(REVIEW_ENTITY_NAME));
         }
         if (review.getMessage() == null || review.getMessage().trim().isEmpty()) {
             throw new BadRequestException(ErrorMessages.REVIEW_MESSAGE_EMPTY);
@@ -84,7 +87,8 @@ public class ReviewService {
     @Transactional
     public Review update(int id, Review review) {
         if (review == null) {
-            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL.formatted("Review"));
+            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
+                    .formatted(REVIEW_ENTITY_NAME));
         }
 
         Review existingReview = reviewRepository.findById(id)
@@ -128,7 +132,7 @@ public class ReviewService {
                 .peek(review -> {
                     if (review == null) {
                         throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
-                                .formatted("Review"));
+                                .formatted(REVIEW_ENTITY_NAME));
                     }
                     if (review.getMessage() == null || review.getMessage().trim().isEmpty()) {
                         throw new BadRequestException(ErrorMessages.REVIEW_MESSAGE_EMPTY);
@@ -136,8 +140,7 @@ public class ReviewService {
                 })
                 .map(review -> {
                     review.setBook(book);
-                    Review savedReview = reviewRepository.save(review);
-                    return savedReview;
+                    return reviewRepository.save(review);
                 })
                 .collect(Collectors.toList());
     }

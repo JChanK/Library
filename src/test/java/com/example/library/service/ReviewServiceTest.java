@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ReviewServiceTest { //NOSONAR
+class ReviewServiceTest {
 
     @Mock
     private ReviewRepository reviewRepository;

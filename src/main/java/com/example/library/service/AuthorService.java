@@ -23,7 +23,9 @@ public class AuthorService {
 
     private final AuthorRepository authorRepository;
     private final BookRepository bookRepository;
-    private final CacheUtil<Integer, Author> authorCacheId; // Кэш для авторов
+    private final CacheUtil<Integer, Author> authorCacheId;
+
+    private static final String AUTHOR_ENTITY_NAME = "Author";
 
     @Autowired
     public AuthorService(AuthorRepository authorRepository,
@@ -53,7 +55,7 @@ public class AuthorService {
     @Transactional
     public Author create(Author author, int bookId) {
         if (author == null) {
-            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL.formatted("Author"));
+            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL.formatted(AUTHOR_ENTITY_NAME));
         }
         validateAuthorName(author.getName(), "name");
         validateAuthorName(author.getSurname(), "surname");
@@ -114,7 +116,8 @@ public class AuthorService {
     @Transactional
     public Author update(int id, Author author) {
         if (author == null) {
-            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL.formatted("Author"));
+            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
+                    .formatted(AUTHOR_ENTITY_NAME));
         }
         if (author.getName() == null || author.getName().trim().isEmpty()) {
             throw new BadRequestException(ErrorMessages.AUTHOR_NAME_EMPTY);
@@ -171,7 +174,7 @@ public class AuthorService {
                 .peek(author -> {
                     if (author == null) {
                         throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
-                                .formatted("Author"));
+                                .formatted(AUTHOR_ENTITY_NAME));
                     }
                     validateAuthorName(author.getName(), "name");
                     validateAuthorName(author.getSurname(), "surname");

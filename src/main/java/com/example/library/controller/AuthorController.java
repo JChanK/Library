@@ -3,6 +3,7 @@ package com.example.library.controller;
 import com.example.library.annotation.CountVisit;
 import com.example.library.dto.AuthorDto;
 import com.example.library.exception.BadRequestException;
+import com.example.library.exception.InternalServerErrorException;
 import com.example.library.exception.ResourceNotFoundException;
 import com.example.library.mapper.AuthorMapper;
 import com.example.library.model.Author;
@@ -73,7 +74,7 @@ public class AuthorController {
         } catch (ResourceNotFoundException | BadRequestException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new RuntimeException("Internal server error", ex);
+            throw new InternalServerErrorException("Internal server error", ex);
         }
     }
 
@@ -96,7 +97,7 @@ public class AuthorController {
                     .collect(Collectors.toList());
             return ResponseEntity.ok(authorDtos);
         } catch (Exception ex) {
-            throw new RuntimeException("Internal server error", ex);
+            throw new InternalServerErrorException("Internal server error", ex);
         }
     }
 
@@ -124,9 +125,9 @@ public class AuthorController {
             AuthorDto authorDto = authorMapper.toDto(author);
             return ResponseEntity.ok(authorDto);
         } catch (ResourceNotFoundException ex) {
-            throw ex; // Вернет 404
+            throw ex;
         } catch (Exception ex) {
-            throw new RuntimeException("Internal server error", ex);
+            throw new InternalServerErrorException("Internal server error", ex);
         }
     }
 
@@ -153,7 +154,7 @@ public class AuthorController {
         } catch (ResourceNotFoundException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new RuntimeException("Internal server error", ex);
+            throw new InternalServerErrorException("Internal server error", ex);
         }
     }
 

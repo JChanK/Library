@@ -41,17 +41,18 @@ public class AsyncLogService {
                 Thread.sleep(PROCESSING_DELAY_MS);
 
                 ResponseEntity<Resource> response = isPerformanceLog
-                        ?
-                        logService.getPerformanceLogsByDate(date) :
-                        logService.getLogFileByDate(date);
+                        ? logService.getPerformanceLogsByDate(date)
+                        : logService.getLogFileByDate(date);
 
-                if (response.getBody() instanceof LogService.AutoDeletingTempFileResource tempRes) {
+                if (response.getBody() instanceof LogService.AutoDeletingTempFileResource) {
                     tasks.put(taskId, new LogTaskResponse(
                             taskId,
                             LogTaskStatus.COMPLETED,
                             date,
                             isPerformanceLog
                     ));
+                } else {
+                    logger.warn("Task {} did not return a valid resource", taskId);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
