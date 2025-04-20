@@ -22,12 +22,6 @@ sonar {
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 
-sonarqube {
-    properties {
-        property "sonar.exclusions", "**/src/test/**, **/*Test.java, **/*Tests.java, **/*IT.java"
-    }
-}
-
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
