@@ -15,6 +15,7 @@ import org.springframework.util.StopWatch;
 @Aspect
 @Component
 public class LoggingUtil {
+
     private static final Logger logger = LoggerFactory.getLogger(LoggingUtil.class);
     private static final Logger performanceLogger = LoggerFactory.getLogger("PERFORMANCE_LOGGER");
 
@@ -32,28 +33,33 @@ public class LoggingUtil {
         try {
             Object result = joinPoint.proceed();
             stopWatch.stop();
-            logger.debug("Method {} executed successfully in {} ms",
-                    methodName, stopWatch.getTotalTimeMillis());
-            performanceLogger.info("{} | {} ms | SUCCESS",
-                    methodName, stopWatch.getTotalTimeMillis());
+
+            logger.debug("Method {} executed successfully in {} ms", methodName, stopWatch.getTotalTimeMillis());
+            performanceLogger.info("{} | {} ms | SUCCESS", methodName, stopWatch.getTotalTimeMillis());
+
             return result;
+
         } catch (ResourceNotFoundException | BadRequestException e) {
             if (stopWatch.isRunning()) {
                 stopWatch.stop();
             }
-            logger.warn("Business exception in {}: {}", methodName, e.getMessage(), e);
-            performanceLogger.warn("{} | {} ms | {}: {}",
-                    methodName, stopWatch.getTotalTimeMillis(),
+
+            logger.debug("Business exception in {}: {}", methodName, e.getMessage());
+            performanceLogger.warn("{} | {} ms | {}: {}", methodName, stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName(), e.getMessage());
+
             throw new LogProcessingException("Business exception in method: " + methodName, e);
+
         } catch (Throwable e) {
             if (stopWatch.isRunning()) {
                 stopWatch.stop();
             }
+
             logger.error("Unexpected error in {}: {}", methodName, e.getMessage(), e);
             performanceLogger.error("{} | {} ms | FAILED: {}",
                     methodName, stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName());
+
             throw new LogProcessingException("Unexpected error in method: " + methodName, e);
         }
     }
