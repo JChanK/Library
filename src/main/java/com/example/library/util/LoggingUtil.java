@@ -1,8 +1,5 @@
 package com.example.library.util;
 
-import com.example.library.exception.BadRequestException;
-import com.example.library.exception.LogProcessingException;
-import com.example.library.exception.ResourceNotFoundException;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -22,8 +19,9 @@ public class LoggingUtil {
     @Pointcut("execution(* com.example.library.controller..*(..))")
     public void controllerMethods() {}
 
+    @SuppressWarnings({"checkstyle:Indentation", "checkstyle:VariableDeclarationUsageDistance"})
     @Around("controllerMethods()")
-    public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws LogProcessingException {
+    public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         StopWatch stopWatch = new StopWatch();
         String methodName = joinPoint.getSignature().toShortString();
 
@@ -31,7 +29,6 @@ public class LoggingUtil {
         logger.debug("Entering method: {} with arguments: {}", methodName, joinPoint.getArgs());
         stopWatch.start();
 
-        try {
             // Выполняем метод
             Object result = joinPoint.proceed();
             stopWatch.stop();
@@ -43,44 +40,5 @@ public class LoggingUtil {
                     stopWatch.getTotalTimeMillis());
 
             return result;
-
-        } catch (ResourceNotFoundException | BadRequestException e) {
-            // Останавливаем таймер, если он еще работает
-            if (stopWatch.isRunning()) {
-                stopWatch.stop();
-            }
-
-            // Логируем бизнес-исключение с полным стектрейсом на DEBUG уровне
-            logger.warn("Business exception in method '{}': {}", methodName, e.getMessage());
-            logger.debug("Business exception stack trace:", e);
-            performanceLogger.warn("{} | {} ms | {}: {}",
-                    methodName,
-                    stopWatch.getTotalTimeMillis(),
-                    e.getClass().getSimpleName(),
-                    e.getMessage());
-
-            // Пробрасываем оригинальное исключение, так как оно уже было залогировано
-            throw e;
-
-        } catch (Throwable e) {
-            // Останавливаем таймер, если он еще работает
-            if (stopWatch.isRunning()) {
-                stopWatch.stop();
-            }
-
-            // Логируем неожиданное исключение
-            logger.error("Unexpected error in method '{}': {}", methodName, e.getMessage(), e);
-            performanceLogger.error("{} | {} ms | FAILED: {}",
-                    methodName,
-                    stopWatch.getTotalTimeMillis(),
-                    e.getClass().getSimpleName());
-
-            // Пробрасываем исключение с контекстной информацией
-            throw new LogProcessingException(
-                    String.format("Unexpected error occurred in method '%s'. Cause: %s", methodName,
-                            e.getMessage()),
-                    e
-            );
-        }
     }
 }
