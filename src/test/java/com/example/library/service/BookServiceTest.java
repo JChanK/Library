@@ -73,14 +73,11 @@ class BookServiceTest {
 
     @Test
     void create_ValidBook_ReturnsCreatedBook() {
-        // Настройка моков
         when(authorRepository.findByNameAndSurname("John", "Doe")).thenReturn(author);
         when(bookRepository.save(any(Book.class))).thenReturn(book);
 
-        // Вызов метода
         Book result = bookService.create(book);
 
-        // Проверки
         assertNotNull(result);
         assertEquals("Test Book", result.getTitle());
     }
@@ -122,12 +119,10 @@ class BookServiceTest {
 
         assertNotNull(result);
         assertEquals("Test Book", result.getTitle());
-        //verify(bookCacheId).put(1, book);
     }
 
     @Test
     void update_ValidBook_ReturnsUpdatedBook() {
-        // Настройка моков
         when(bookRepository.findById(1)).thenReturn(Optional.of(book));
         when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> {
             Book savedBook = invocation.getArgument(0);
@@ -135,32 +130,23 @@ class BookServiceTest {
             return book;
         });
 
-        // Подготовка данных для обновления
         Book updatedBookData = new Book();
         updatedBookData.setTitle("Updated Title");
         updatedBookData.setAuthors(List.of(author));
 
-        // Вызов метода
         Book result = bookService.update(updatedBookData, 1);
 
-        // Проверки
         assertNotNull(result);
         assertEquals("Updated Title", result.getTitle());
     }
 
     @Test
     void delete_ExistingBook_ReturnsTrue() {
-        // Настройка моков
         when(bookRepository.findById(1)).thenReturn(Optional.of(book));
         when(authorRepository.save(any(Author.class))).thenReturn(author);
 
-        // Вызов метода
         boolean result = bookService.delete(1);
-
-        // Проверки
         assertTrue(result);
-        //verify(bookCacheId).evict(1);
-        //verify(reviewCacheId, never()).evict(anyInt());
     }
 
     @Test

@@ -92,7 +92,6 @@ class ReviewServiceTest {
 
     @Test
     void getReviewsByBookId_ExistingBook_ReturnsReviews() {
-        //when(reviewCacheId.get(1)).thenReturn(null);
         when(bookRepository.existsById(1)).thenReturn(true);
         when(reviewRepository.findByBookId(1)).thenReturn(List.of(review));
 
@@ -100,7 +99,6 @@ class ReviewServiceTest {
 
         assertFalse(result.isEmpty());
         assertEquals("Great book!", result.get(0).getMessage());
-        //verify(reviewCacheId).put(1, List.of(review));
         verify(reviewRepository).findByBookId(1);
     }
 

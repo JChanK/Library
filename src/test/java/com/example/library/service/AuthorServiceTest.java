@@ -276,24 +276,6 @@ class AuthorServiceTest {
     }
 
     @Test
-    void update_EmptyName_ThrowsBadRequestException() {
-        Author updateData = new Author();
-        updateData.setName("");
-        updateData.setSurname("Smith");
-
-        assertThrows(BadRequestException.class, () -> authorService.update(1, updateData));
-    }
-
-    @Test
-    void update_EmptySurname_ThrowsBadRequestException() {
-        Author updateData = new Author();
-        updateData.setName("Jane");
-        updateData.setSurname("");
-
-        assertThrows(BadRequestException.class, () -> authorService.update(1, updateData));
-    }
-
-    @Test
     void delete_BookHasOtherAuthors_DoesNotDeleteBook() {
         Author anotherAuthor = new Author();
         anotherAuthor.setId(2);
@@ -389,21 +371,28 @@ class AuthorServiceTest {
     }
 
     @Test
-    void update_NameIsNull_ThrowsBadRequestException() {
-        Author updateData = new Author();
-        updateData.setName(null);
-        updateData.setSurname("Smith");
+    void update_InvalidAuthorData_ThrowsBadRequestException() {
+        Author[] invalidAuthors = new Author[4];
 
-        assertThrows(BadRequestException.class, () -> authorService.update(1, updateData));
-    }
+        invalidAuthors[0] = new Author();
+        invalidAuthors[0].setName("");
+        invalidAuthors[0].setSurname("Smith");
 
-    @Test
-    void update_SurnameIsNull_ThrowsBadRequestException() {
-        Author updateData = new Author();
-        updateData.setName("Jane");
-        updateData.setSurname(null);
+        invalidAuthors[1] = new Author();
+        invalidAuthors[1].setName(null);
+        invalidAuthors[1].setSurname("Smith");
 
-        assertThrows(BadRequestException.class, () -> authorService.update(1, updateData));
+        invalidAuthors[2] = new Author();
+        invalidAuthors[2].setName("Jane");
+        invalidAuthors[2].setSurname("");
+
+        invalidAuthors[3] = new Author();
+        invalidAuthors[3].setName("Jane");
+        invalidAuthors[3].setSurname(null);
+
+        for (Author author : invalidAuthors) {
+            assertThrows(BadRequestException.class, () -> authorService.update(1, author));
+        }
     }
 
     @Test
