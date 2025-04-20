@@ -27,17 +27,17 @@ public class LoggingUtil {
         StopWatch stopWatch = new StopWatch();
         String methodName = joinPoint.getSignature().toShortString();
 
-        // Log method entry (avoid sensitive data in args)
+        // Логируем вход в метод
         logger.debug("Entering method: {} with arguments: {}", methodName, joinPoint.getArgs());
         stopWatch.start();
 
         try {
-            // Proceed with method execution
+            // Выполняем метод
             Object result = joinPoint.proceed();
             stopWatch.stop();
 
-            // Log successful execution
-            logger.debug("Method {} executed successfully in {} ms", methodName,
+            // Логируем успешное выполнение
+            logger.debug("Method '{}' executed successfully in {} ms", methodName,
                     stopWatch.getTotalTimeMillis());
             performanceLogger.info("{} | {} ms | SUCCESS", methodName,
                     stopWatch.getTotalTimeMillis());
@@ -45,34 +45,45 @@ public class LoggingUtil {
             return result;
 
         } catch (ResourceNotFoundException | BadRequestException e) {
-            // Stop the timer if running
+            // Останавливаем таймер, если он еще работает
             if (stopWatch.isRunning()) {
                 stopWatch.stop();
             }
 
-            // Log the business exception with context
-            logger.warn("Business exception in {}: {}", methodName, e.getMessage());
-            performanceLogger.warn("{} | {} ms | {}: {}", methodName,
+            // Логируем бизнес-исключение
+            logger.warn("Business exception in method '{}': {}", methodName, e.getMessage());
+            performanceLogger.warn("{} | {} ms | {}: {}",
+                    methodName,
                     stopWatch.getTotalTimeMillis(),
-                    e.getClass().getSimpleName(), e.getMessage());
+                    e.getClass().getSimpleName(),
+                    e.getMessage());
 
-            // Rethrow with additional context
-            throw new LogProcessingException("Business exception in method: " + methodName, e);
+            // Повторно выбрасываем исключение с контекстом
+            throw new LogProcessingException(
+                    String.format("Business exception occurred in method '%s'. Cause: %s",
+                            methodName, e.getMessage()),
+                    e
+            );
 
         } catch (Throwable e) {
-            // Stop the timer if running
+            // Останавливаем таймер, если он еще работает
             if (stopWatch.isRunning()) {
                 stopWatch.stop();
             }
 
-            // Log unexpected exceptions with stack trace
-            logger.error("Unexpected error in {}: {}", methodName, e.getMessage(), e);
-            performanceLogger.error("{} | {} ms | FAILED: {}", methodName,
+            // Логируем неожиданное исключение
+            logger.error("Unexpected error in method '{}': {}", methodName, e.getMessage(), e);
+            performanceLogger.error("{} | {} ms | FAILED: {}",
+                    methodName,
                     stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName());
 
-            // Rethrow with additional context
-            throw new LogProcessingException("Unexpected error in method: " + methodName, e);
+            // Повторно выбрасываем неожиданное исключение с контекстом
+            throw new LogProcessingException(
+                    String.format("Unexpected error occurred in method '%s'. Cause: %s", methodName,
+                            e.getMessage()),
+                    e
+            );
         }
     }
 }
