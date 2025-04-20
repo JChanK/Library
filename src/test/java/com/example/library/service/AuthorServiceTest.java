@@ -390,8 +390,8 @@ class AuthorServiceTest {
         invalidAuthors[3].setName("Jane");
         invalidAuthors[3].setSurname(null);
 
-        for (Author author : invalidAuthors) {
-            assertThrows(BadRequestException.class, () -> authorService.update(1, author));
+       for (Author invalidAuthor : invalidAuthors) {
+            assertThrows(BadRequestException.class, () -> authorService.update(1, invalidAuthor));
         }
     }
 

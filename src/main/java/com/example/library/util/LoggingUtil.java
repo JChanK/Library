@@ -41,7 +41,7 @@ public class LoggingUtil {
             if (stopWatch.isRunning()) {
                 stopWatch.stop();
             }
-            logger.debug("Business exception in {}: {}", methodName, e.getMessage());
+            logger.warn("Business exception in {}: {}", methodName, e.getMessage(), e);
             performanceLogger.warn("{} | {} ms | {}: {}",
                     methodName, stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName(), e.getMessage());

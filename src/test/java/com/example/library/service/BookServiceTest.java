@@ -112,7 +112,6 @@ class BookServiceTest {
 
     @Test
     void findById_ExistingId_ReturnsBook() {
-        //when(bookCacheId.get(1)).thenReturn(null);
         when(bookRepository.findById(1)).thenReturn(Optional.of(book));
 
         Book result = bookService.findById(1);
