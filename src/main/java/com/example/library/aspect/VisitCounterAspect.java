@@ -1,6 +1,7 @@
 package com.example.library.aspect;
 
 import com.example.library.annotation.CountVisit;
+import com.example.library.exception.VisitCounterException;
 import com.example.library.service.VisitCounterService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -21,16 +22,20 @@ public class VisitCounterAspect {
 
     @Around("@annotation(countVisit)")
     public Object countVisit(ProceedingJoinPoint joinPoint, CountVisit countVisit)
-            throws Throwable {
+            throws VisitCounterException {
         String url = countVisit.value().isEmpty()
-                ? resolveUrlFromRequest(joinPoint)
+                ? resolveUrlFromRequest()
                 : countVisit.value();
 
-        visitCounterService.incrementCounter(url);
-        return joinPoint.proceed();
+        try {
+            visitCounterService.incrementCounter(url);
+            return joinPoint.proceed();
+        } catch (Throwable e) {
+            throw new VisitCounterException("Failed to increment visit counter for URL: " + url, e);
+        }
     }
 
-    private String resolveUrlFromRequest(ProceedingJoinPoint joinPoint) {
+    private String resolveUrlFromRequest() {
         HttpServletRequest request =
                 ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes())
                         .getRequest();

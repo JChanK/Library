@@ -22,7 +22,7 @@ public class LoggingUtil {
     public void controllerMethods() {}
 
     @Around("controllerMethods()")
-    public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
+    public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws LogProcessingException {
         StopWatch stopWatch = new StopWatch();
         String methodName = joinPoint.getSignature().toShortString();
 
@@ -46,7 +46,7 @@ public class LoggingUtil {
                     methodName, stopWatch.getTotalTimeMillis(),
                     e.getClass().getSimpleName(), e.getMessage());
             throw new LogProcessingException("Business exception in method: " + methodName, e);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             if (stopWatch.isRunning()) {
                 stopWatch.stop();
             }
