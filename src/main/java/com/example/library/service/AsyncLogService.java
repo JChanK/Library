@@ -49,6 +49,14 @@ public class AsyncLogService {
                             date
                     ));
                 }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error("Task {} was interrupted: {}", taskId, e.getMessage());
+                tasks.put(taskId, new LogTaskResponse(
+                        taskId,
+                        LogTaskStatus.FAILED,
+                        date
+                ));
             } catch (Exception e) {
                 logger.error("Error processing task {}: {}", taskId, e.getMessage());
                 tasks.put(taskId, new LogTaskResponse(
