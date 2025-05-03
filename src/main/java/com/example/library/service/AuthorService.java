@@ -55,7 +55,8 @@ public class AuthorService {
     @Transactional
     public Author create(Author author, int bookId) {
         if (author == null) {
-            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL.formatted(AUTHOR_ENTITY_NAME));
+            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
+                    .formatted(AUTHOR_ENTITY_NAME));
         }
         validateAuthorName(author.getName(), "name");
         validateAuthorName(author.getSurname(), "surname");

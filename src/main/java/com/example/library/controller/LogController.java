@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -56,29 +55,27 @@ public class LogController {
 
     @GetMapping("/async/start")
     @CountVisit
-    @Operation(summary = "Start async log processing")
-    public ResponseEntity<Map<String, UUID>> startAsyncProcessing(
-            @RequestParam LocalDate date,
-            @RequestParam(required = false, defaultValue = "false") boolean isPerformanceLog) {
-
-        UUID taskId = asyncLogService.startAsyncProcessing(date, isPerformanceLog);
+    @Operation(summary = "Начать асинхронную обработку")
+    public ResponseEntity<Map<String, Integer>> startAsyncProcessing(
+            @RequestParam LocalDate date) {
+        int taskId = asyncLogService.startAsyncProcessing(date);
         return ResponseEntity.ok(Collections.singletonMap("taskId", taskId));
     }
 
     @GetMapping("/async/status/{taskId}")
     @CountVisit
-    @Operation(summary = "Get task status")
+    @Operation(summary = "Получить статус")
     public ResponseEntity<LogTaskStatus> getTaskStatus(
-            @PathVariable UUID taskId) {
+            @PathVariable int taskId) {
 
         return ResponseEntity.ok(asyncLogService.getTaskStatus(taskId));
     }
 
     @GetMapping("/async/result/{taskId}")
     @CountVisit
-    @Operation(summary = "Get processed log file")
+    @Operation(summary = "Получить готовый лог-файл")
     public ResponseEntity<Resource> getTaskResult(
-            @PathVariable UUID taskId) throws IOException {
+            @PathVariable int taskId) throws IOException {
 
         return asyncLogService.getTaskResult(taskId);
     }
