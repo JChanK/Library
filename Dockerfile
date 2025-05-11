@@ -1,18 +1,26 @@
-# Этап 1: Сборка
 FROM gradle:8.2.1-jdk17 AS builder
 
+# Запускаем от root
 USER root
+
+# Создаём рабочую директорию и кеш вручную
 WORKDIR /home/gradle/project
 COPY . .
 
-# Установка прав
-RUN mkdir -p /home/gradle/project/.gradle && \
+# Удаляем потенциально битый кэш, настраиваем права и окружение
+RUN rm -rf /home/gradle/.gradle && \
+    mkdir -p /home/gradle/.gradle && \
+    chown -R gradle:gradle /home/gradle && \
     chown -R gradle:gradle /home/gradle/project
 
-ENV GRADLE_USER_HOME=/home/gradle/project/.gradle
+# Указываем нестандартное место для GRADLE_USER_HOME
+ENV GRADLE_USER_HOME=/home/gradle/.gradle
+
 USER gradle
 
-RUN gradle build --no-daemon --no-build-cache --refresh-dependencies
+# Сборка проекта
+RUN gradle clean build --no-daemon --no-build-cache --refresh-dependencies
+
 
 # Этап 2: Запуск
 FROM eclipse-temurin:17-jdk-jammy
