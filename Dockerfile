@@ -1,8 +1,14 @@
 # Этап 1: Сборка приложения
 FROM gradle:8.2.1-jdk17 AS builder
-COPY --chown=gradle:gradle . /home/gradle/project
+
 WORKDIR /home/gradle/project
+COPY --chown=gradle:gradle . .
+
+# Используем локальный кеш внутри проекта
+ENV GRADLE_USER_HOME=/home/gradle/project/.gradle
+
 RUN gradle build --no-daemon
+
 
 # Этап 2: Запуск приложения
 FROM eclipse-temurin:17-jdk-jammy
