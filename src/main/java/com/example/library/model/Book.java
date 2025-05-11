@@ -1,8 +1,8 @@
 package com.example.library.model;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.CascadeType;
@@ -34,8 +34,9 @@ public class Book {
     private String title;
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH,
-                           CascadeType.DETACH}, fetch = FetchType.LAZY)
+                           CascadeType.DETACH}, fetch = FetchType.EAGER)
     @JsonIgnoreProperties("books")
+    @JsonManagedReference
     @JoinTable(
             name = "book_author",
             joinColumns = @JoinColumn(name = "book_id"),
@@ -45,7 +46,7 @@ public class Book {
     private List<Author> authors;
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL,
-            orphanRemoval = true, fetch = FetchType.LAZY)
+            orphanRemoval = true, fetch = FetchType.EAGER)
     @Schema(description = "Список отзывов о книге")
     private List<Review> reviews;
 

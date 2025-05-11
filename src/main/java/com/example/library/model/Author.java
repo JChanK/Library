@@ -1,7 +1,7 @@
 package com.example.library.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -33,7 +33,8 @@ public class Author {
     private String surname;
 
     @ManyToMany(mappedBy = "authors", fetch = FetchType.EAGER)
-    @JsonIgnore
+    //@JsonIgnore
+    @JsonBackReference
     @Schema(description = "Список книг автора")
     private List<Book> books;
 

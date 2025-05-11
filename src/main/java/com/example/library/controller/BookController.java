@@ -2,10 +2,13 @@ package com.example.library.controller;
 
 import com.example.library.annotation.CountVisit;
 import com.example.library.dto.BookDto;
+import com.example.library.dto.CreateBookDto;
 import com.example.library.exception.ErrorMessages;
 import com.example.library.exception.ResourceNotFoundException;
 import com.example.library.mapper.BookMapper;
+import com.example.library.model.Author;
 import com.example.library.model.Book;
+import com.example.library.model.Review;
 import com.example.library.service.BookService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -47,7 +50,7 @@ public class BookController {
     @Operation(
             summary = "Создать книгу",
             description = "Создает новую книгу и связывает её с авторами.",
-            responses = {   @ApiResponse(
+            responses = {@ApiResponse(
                             responseCode = "201",
                             description = "Книга успешно создана",
                             content = @Content(schema = @Schema(implementation = Book.class))),
@@ -56,7 +59,33 @@ public class BookController {
                             description = "Некорректные данные книги")
             }
     )
-    public ResponseEntity<Book> create(@Valid @RequestBody Book book) {
+    public ResponseEntity<Book> create(@Valid @RequestBody CreateBookDto bookDto) {
+        Book book = new Book();
+        book.setTitle(bookDto.getTitle());
+
+        // Авторы
+        List<Author> authors = bookDto.getAuthors().stream()
+                .map(authorDto -> {
+                    Author author = new Author();
+                    author.setName(authorDto.getName());
+                    author.setSurname(authorDto.getSurname());
+                    return author;
+                })
+                .collect(Collectors.toList());
+        book.setAuthors(authors);
+
+        // Отзывы
+        if (bookDto.getReviews() != null) {
+            List<Review> reviews = bookDto.getReviews().stream()
+                    .map(reviewDto -> {
+                        Review review = new Review();
+                        review.setMessage(reviewDto.getMessage());
+                        return review;
+                    })
+                    .collect(Collectors.toList());
+            book.setReviews(reviews);
+        }
+
         Book createdBook = bookService.create(book);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdBook);
     }

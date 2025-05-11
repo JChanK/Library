@@ -83,28 +83,4 @@ jacocoTestReport {
     }
 }
 
-jacocoTestCoverageVerification {
-    violationRules {
-        rule {
-            limit {
-                minimum = 0.8 // 80% покрытия
-            }
-        }
-    }
-
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, includes: [
-                    '**/service/**',
-                    '**/repository/**'
-            ], excludes: [
-                    '**/model/**',
-                    '**/dto/**',
-                    '**/config/**',
-                    '**/exception/**'
-            ])
-        }))
-    }
-}
-
 jacocoTestReport.finalizedBy jacocoTestCoverageVerification

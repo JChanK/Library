@@ -54,19 +54,33 @@ public class BookService {
             throw new BadRequestException(ErrorMessages.BOOK_TITLE_EMPTY);
         }
         if (book.getAuthors() == null || book.getAuthors().isEmpty()) {
-            throw new BadRequestException(ErrorMessages.BOOK_NOT_FOUND);
+            throw new BadRequestException(ErrorMessages.BOOK_AUTHORS_EMPTY);
         }
 
+        // Обработка авторов
         Set<Author> authorsToAdd = new HashSet<>();
         for (Author author : book.getAuthors()) {
             Author existingAuthor = authorRepository.findByNameAndSurname(author.getName(),
                     author.getSurname());
             authorsToAdd.add(Objects.requireNonNullElse(existingAuthor, author));
         }
-
         book.setAuthors(new ArrayList<>(authorsToAdd));
+
+        // Сначала сохраняем книгу (без отзывов)
         Book savedBook = bookRepository.save(book);
 
+        // Обработка отзывов
+        if (book.getReviews() != null && !book.getReviews().isEmpty()) {
+            List<Review> savedReviews = new ArrayList<>();
+            for (Review review : book.getReviews()) {
+                review.setBook(savedBook); // Устанавливаем связь с книгой
+                Review savedReview = reviewRepository.save(review);
+                savedReviews.add(savedReview);
+            }
+            savedBook.setReviews(savedReviews);
+        }
+
+        // Обновляем кэш
         bookCacheId.put(savedBook.getId(), savedBook);
         for (Author author : savedBook.getAuthors()) {
             authorCacheId.put(author.getId(), author);
@@ -102,24 +116,42 @@ public class BookService {
     @Transactional
     public Book update(Book book, int id) {
         if (book == null) {
-            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL
-                    .formatted("Book"));
+            throw new BadRequestException(ErrorMessages.ENTITY_CANNOT_BE_NULL.formatted("Book"));
         }
 
         Book existingBook = bookRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorMessages.BOOK_NOT_FOUND.formatted(id)));
 
-        List<Author> updatedAuthors = new ArrayList<>(new HashSet<>(book.getAuthors()));
-        existingBook.setAuthors(updatedAuthors);
-        existingBook.setTitle(book.getTitle());
+        // Обновляем название
+        if (book.getTitle() != null) {
+            existingBook.setTitle(book.getTitle());
+        }
+
+        // Обновляем авторов (если они переданы)
+        if (book.getAuthors() != null) {
+            // Очищаем текущих авторов
+            existingBook.getAuthors().forEach(author -> {
+                author.getBooks().remove(existingBook);
+                authorRepository.save(author);
+            });
+            existingBook.getAuthors().clear();
+
+            // Добавляем новых авторов
+            Set<Author> updatedAuthors = new HashSet<>();
+            for (Author author : book.getAuthors()) {
+                Author existingAuthor = authorRepository.findById(author.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                ErrorMessages.AUTHOR_NOT_FOUND.formatted(author.getId())));
+                updatedAuthors.add(existingAuthor);
+                existingAuthor.getBooks().add(existingBook);
+                authorRepository.save(existingAuthor);
+            }
+            existingBook.setAuthors(new ArrayList<>(updatedAuthors));
+        }
 
         Book updatedBook = bookRepository.save(existingBook);
         bookCacheId.put(updatedBook.getId(), updatedBook);
-
-        for (Author author : updatedAuthors) {
-            authorCacheId.put(author.getId(), author);
-        }
 
         return updatedBook;
     }

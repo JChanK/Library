@@ -2,11 +2,14 @@ package com.example.library.controller;
 
 import com.example.library.annotation.CountVisit;
 import com.example.library.dto.AuthorDto;
+import com.example.library.dto.BookDto;
 import com.example.library.exception.BadRequestException;
 import com.example.library.exception.InternalServerErrorException;
 import com.example.library.exception.ResourceNotFoundException;
 import com.example.library.mapper.AuthorMapper;
+import com.example.library.mapper.BookMapper;
 import com.example.library.model.Author;
+import com.example.library.model.Book;
 import com.example.library.service.AuthorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,10 +21,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,11 +39,14 @@ public class AuthorController {
 
     private final AuthorService authorService;
     private final AuthorMapper authorMapper;
+    private final BookMapper bookMapper;
 
     @Autowired
-    public AuthorController(AuthorService authorService, AuthorMapper authorMapper) {
+    public AuthorController(AuthorService authorService,
+                            AuthorMapper authorMapper, BookMapper bookMapper) {
         this.authorService = authorService;
         this.authorMapper = authorMapper;
+        this.bookMapper = bookMapper;
     }
 
     @PostMapping
@@ -194,5 +202,84 @@ public class AuthorController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.status(201).body(createdAuthorDtos);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(
+            summary = "Обновить автора",
+            description = "Обновляет данные автора по указанному ID",
+            responses = {@ApiResponse(
+                            responseCode = "200",
+                            description = "Автор успешно обновлен",
+                            content = @Content(schema = @Schema(implementation = AuthorDto.class))),
+                            @ApiResponse(
+                            responseCode = "400",
+                            description = "Некорректные данные автора"),
+                            @ApiResponse(
+                            responseCode = "404",
+                            description = "Автор не найден")
+            }
+    )
+    public ResponseEntity<AuthorDto> update(
+            @PathVariable
+            @Parameter(description = "ID автора", example = "1")
+            int id,
+
+            @RequestBody
+            @Schema(description = "Новые данные автора", required = true)
+            AuthorDto authorDto) {
+
+        try {
+            Author author = authorMapper.toEntity(authorDto);
+            Author updatedAuthor = authorService.update(id, author);
+            AuthorDto updatedAuthorDto = authorMapper.toDto(updatedAuthor);
+            return ResponseEntity.ok(updatedAuthorDto);
+        } catch (ResourceNotFoundException | BadRequestException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new InternalServerErrorException("Internal server error", ex);
+        }
+    }
+
+    @GetMapping("/{id}/books")
+    @CountVisit
+    @Operation(
+            summary = "Получить книги автора",
+            description = "Возвращает все книги, связанные с автором",
+            responses = {@ApiResponse(
+                            responseCode = "200",
+                            description = "Книги успешно найдены",
+                            content = @Content(schema = @Schema(implementation = BookDto[].class))),
+                            @ApiResponse(
+                            responseCode = "404",
+                            description = "Автор не найден")
+            }
+    )
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<BookDto>> getAuthorBooks(
+            @PathVariable
+            @Parameter(description = "ID автора", example = "1")
+            int id) {
+
+        try {
+            Author author = authorService.findById(id);
+            List<Book> books = author.getBooks();
+
+            if (books == null || books.isEmpty()) {
+                throw new BadRequestException("У автора с ID " + id + " нет связанных книг");
+            }
+
+            List<BookDto> bookDtos = books.stream()
+                    .map(bookMapper::toDto)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(bookDtos);
+        } catch (ResourceNotFoundException ex) {
+            throw ex;
+        } catch (BadRequestException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new InternalServerErrorException("Internal server error", ex);
+        }
     }
 }

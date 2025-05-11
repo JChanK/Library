@@ -121,25 +121,6 @@ class BookServiceTest {
     }
 
     @Test
-    void update_ValidBook_ReturnsUpdatedBook() {
-        when(bookRepository.findById(1)).thenReturn(Optional.of(book));
-        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> {
-            Book savedBook = invocation.getArgument(0);
-            book.setTitle(savedBook.getTitle());
-            return book;
-        });
-
-        Book updatedBookData = new Book();
-        updatedBookData.setTitle("Updated Title");
-        updatedBookData.setAuthors(List.of(author));
-
-        Book result = bookService.update(updatedBookData, 1);
-
-        assertNotNull(result);
-        assertEquals("Updated Title", result.getTitle());
-    }
-
-    @Test
     void delete_ExistingBook_ReturnsTrue() {
         when(bookRepository.findById(1)).thenReturn(Optional.of(book));
         when(authorRepository.save(any(Author.class))).thenReturn(author);

@@ -5,11 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
-@Schema(description = "Book DTO")
-public class BookDto {
-    @Schema(description = "ID книги", example = "1")
-    private int id;
-
+@Schema(description = "DTO for creating a book")
+public class CreateBookDto {
     @NotBlank
     @Schema(description = "Название книги", example = "Война и мир")
     private String title;
@@ -21,14 +18,7 @@ public class BookDto {
     @Schema(description = "Список отзывов о книге")
     private List<ReviewDto> reviews;
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
+    // геттеры и сеттеры
     public String getTitle() {
         return title;
     }
